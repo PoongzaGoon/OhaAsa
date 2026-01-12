@@ -176,31 +176,37 @@ def extract_message(tag):
 
 
 
-def parse_item(tag):
+def parse_item(tag, rank_override=None):
     text = tag.get_text(" ", strip=True)
 
-    sign = parse_sign(text)
+    rank = rank_override if rank_override is not None else parse_rank_from_text(text)
 
-    rank = None
-    for el in tag.select("span, div, em, strong"):
-        r = parse_rank_from_text(el.get_text(" ", strip=True))
-        if r and 1 <= r <= 12:
-            rank = r
-            break
-    if not rank:
-        rank = parse_rank_from_text(text)
+    sign = None
+    for img in tag.select("img[alt]"):
+        alt = img.get("alt", "").strip()
+        if alt:
+            sign = parse_sign(alt)
+            if sign:
+                break
 
-    if not rank or not sign:
-        return None
+    if not sign:
+        sign = parse_sign(text)
 
     message = extract_message(tag)
     if message:
         message = re.sub(r"\s+", " ", message).strip()
 
+
+    if not message:
+        message = text
+
+    if not sign:
+        return None
+
     return {
         "rank": rank,
         "sign_jp": sign,
-        "message_jp": message or "",
+        "message_jp": message,
     }
 
 
@@ -208,36 +214,55 @@ def parse_item(tag):
 def parse_rankings(html):
     soup = BeautifulSoup(html, "html.parser")
 
-    anchor = soup.find(string=re.compile(r"今日の星占いランキング"))
-    scope = anchor.parent if anchor else soup
+    heading = soup.find(string=re.compile(r"今日の星占いランキング"))
+    root = heading.find_parent() if heading else soup
 
+    blocks = []
+    for tag in root.find_all_next(["li", "article", "div"], limit=2000):
+        text = tag.get_text(" ", strip=True)
+        if not text:
+            continue
+        if "座" not in text:
+            continue
 
-    candidates = []
-    for tag in scope.find_all(["li", "div", "section", "article"], limit=4000):
-        t = tag.get_text(" ", strip=True)
-        if t and re.search(r"[ぁ-んァ-ン一-龠]+座", t):
-            candidates.append(tag)
+        sign = parse_sign(text)
+        if not sign:
+            continue
+
+        if len(text) > 500:
+            continue
+
+        blocks.append(tag)
+
+        if len(blocks) >= 60:
+            break
+
+    seen = set()
+    items = []
+    for tag in blocks:
+        text = tag.get_text(" ", strip=True)
+        sign = parse_sign(text)
+        if not sign or sign in seen:
+            continue
+        seen.add(sign)
+        items.append(tag)
+        if len(items) >= 12:
+            break
+
+    if len(items) < 12:
+        raise ValueError(f"Rankings incomplete: found {len(items)} items")
 
     parsed = []
-    by_rank = {}
-
-    for tag in candidates:
-        item = parse_item(tag)
-        if not item:
-            continue
-        r = item["rank"]
-
-        if r not in by_rank or len(item.get("message_jp", "")) > len(by_rank[r].get("message_jp", "")):
-            by_rank[r] = item
-
-    parsed = list(by_rank.values())
-    parsed.sort(key=lambda x: x["rank"])
-
+    for i, item_tag in enumerate(items, start=1):
+        item = parse_item(item_tag, rank_override=i)
+        if item:
+            parsed.append(item)
 
     if len(parsed) < 12:
-        raise ValueError(f"Rankings incomplete: found {len(parsed)} items")
+        raise ValueError(f"Rankings incomplete after parse: found {len(parsed)} items")
 
     return parsed
+
 
 
 

@@ -127,11 +127,25 @@ def generate_scores(rank, date_key, sign_key):
     return scores
 
 
-def parse_rank_from_text(text):
-    match = re.search(r"(1[0-2]|[1-9])\s*位", text)
-    if not match:
+def parse_rank_from_text(text: str):
+    if not text:
         return None
-    return int(match.group(1))
+
+    m = re.search(r"(?:第\s*)?(1[0-2]|[1-9])\s*位", text)
+    if m:
+        return int(m.group(1))
+
+    circled = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫"
+    for i, ch in enumerate(circled, start=1):
+        if ch in text:
+            return i
+
+    m = re.search(r"\b(1[0-2]|[1-9])\b", text)
+    if m:
+        return int(m.group(1))
+
+    return None
+
 
 
 def parse_sign(text):
@@ -142,80 +156,89 @@ def parse_sign(text):
 
 
 def extract_message(tag):
-    selectors = [
-        ".comment",
-        ".message",
-        ".text",
-        ".detail",
-        ".desc",
-        ".lead",
-        "p",
-    ]
-    for selector in selectors:
-        for element in tag.select(selector):
-            content = element.get_text(" ", strip=True)
-            if content:
-                return content
-    return None
+
+    candidates = []
+
+    for p in tag.select("p"):
+        t = p.get_text(" ", strip=True)
+        if t:
+            candidates.append(t)
+
+    if not candidates:
+        t = tag.get_text(" ", strip=True)
+        if t:
+            candidates.append(t)
+
+    candidates = [c for c in candidates if len(c) >= 8]
+    if not candidates:
+        return None
+    return max(candidates, key=len)
+
 
 
 def parse_item(tag):
     text = tag.get_text(" ", strip=True)
-    rank = parse_rank_from_text(text)
+
+    sign = parse_sign(text)
+
+    rank = None
+    for el in tag.select("span, div, em, strong"):
+        r = parse_rank_from_text(el.get_text(" ", strip=True))
+        if r and 1 <= r <= 12:
+            rank = r
+            break
     if not rank:
+        rank = parse_rank_from_text(text)
+
+    if not rank or not sign:
         return None
-    sign = None
-    for img in tag.select("img[alt]"):
-        alt = img.get("alt", "").strip()
-        if alt:
-            sign = parse_sign(alt)
-            if sign:
-                break
-    if not sign:
-        sign = parse_sign(text)
+
     message = extract_message(tag)
     if message:
         message = re.sub(r"\s+", " ", message).strip()
-    if not message:
-        message = text
+
     return {
         "rank": rank,
         "sign_jp": sign,
-        "message_jp": message,
+        "message_jp": message or "",
     }
+
 
 
 def parse_rankings(html):
     soup = BeautifulSoup(html, "html.parser")
-    selectors = [
-        ".rank__list li",
-        ".ranking__list li",
-        ".rank-list li",
-        ".horoscope__list li",
-        ".fortune__list li",
-        ".uranai__list li",
-        "ul.rank li",
-    ]
-    for selector in selectors:
-        items = soup.select(selector)
-        if len(items) >= 12:
-            parsed = [parse_item(item) for item in items]
-            parsed = [item for item in parsed if item and item.get("sign_jp")]
-            if len(parsed) >= 12:
-                return parsed
+
+    anchor = soup.find(string=re.compile(r"今日の星占いランキング"))
+    scope = anchor.parent if anchor else soup
+
+
     candidates = []
-    for tag in soup.find_all(["li", "article", "section", "div"]):
-        text = tag.get_text(" ", strip=True)
-        if parse_rank_from_text(text):
+    for tag in scope.find_all(["li", "div", "section", "article"], limit=4000):
+        t = tag.get_text(" ", strip=True)
+        if t and re.search(r"[ぁ-んァ-ン一-龠]+座", t):
             candidates.append(tag)
+
     parsed = []
+    by_rank = {}
+
     for tag in candidates:
         item = parse_item(tag)
-        if item and item.get("sign_jp"):
-            parsed.append(item)
-    if not parsed:
-        raise ValueError("Rankings not found")
+        if not item:
+            continue
+        r = item["rank"]
+
+        if r not in by_rank or len(item.get("message_jp", "")) > len(by_rank[r].get("message_jp", "")):
+            by_rank[r] = item
+
+    parsed = list(by_rank.values())
+    parsed.sort(key=lambda x: x["rank"])
+
+
+    if len(parsed) < 12:
+        raise ValueError(f"Rankings incomplete: found {len(parsed)} items")
+
     return parsed
+
 
 
 def translate_text(text, cache, date_key):

@@ -1,8 +1,8 @@
 {
   "source": "asahi_ohaasa",
   "date_kst": "",
-  "updated_at_kst": "",
+  "updated_at_kst": "2026-01-12T11:21:05.230754+09:00",
   "status": "error",
-  "error_message": "데이터를 아직 불러오지 못했습니다.",
+  "error_message": "Rankings not found",
   "rankings": []
 }

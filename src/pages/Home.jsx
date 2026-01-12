@@ -33,7 +33,15 @@ function Home() {
     navigate(`/result?birthdate=${birthdate}`);
   };
 
-  return <BirthInputCard birthdate={birthdate} error={error} onChange={handleChange} onSubmit={handleSubmit} disabled={!birthdate || !!error} />;
+  return (
+    <BirthInputCard
+      birthdate={birthdate}
+      error={error}
+      onChange={handleChange}
+      onSubmit={handleSubmit}
+      disabled={!birthdate || !!error}
+    />
+  );
 }
 
 export default Home;

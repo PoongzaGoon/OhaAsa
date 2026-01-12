@@ -214,55 +214,39 @@ def parse_item(tag, rank_override=None):
 def parse_rankings(html):
     soup = BeautifulSoup(html, "html.parser")
 
-    heading = soup.find(string=re.compile(r"今日の星占いランキング"))
-    root = heading.find_parent() if heading else soup
-
-    blocks = []
-    for tag in root.find_all_next(["li", "article", "div"], limit=2000):
-        text = tag.get_text(" ", strip=True)
-        if not text:
-            continue
-        if "座" not in text:
-            continue
-
-        sign = parse_sign(text)
-        if not sign:
-            continue
-
-        if len(text) > 500:
-            continue
-
-        blocks.append(tag)
-
-        if len(blocks) >= 60:
-            break
-
-    seen = set()
-    items = []
-    for tag in blocks:
-        text = tag.get_text(" ", strip=True)
-        sign = parse_sign(text)
-        if not sign or sign in seen:
-            continue
-        seen.add(sign)
-        items.append(tag)
-        if len(items) >= 12:
-            break
-
+    items = soup.select("ul.oa_horoscope_list > li")
     if len(items) < 12:
         raise ValueError(f"Rankings incomplete: found {len(items)} items")
 
     parsed = []
-    for i, item_tag in enumerate(items, start=1):
-        item = parse_item(item_tag, rank_override=i)
-        if item:
-            parsed.append(item)
+    for li in items:
+        rank_el = li.select_one("span.horo_rank")
+        name_el = li.select_one("span.horo_name")
+        msg_el = li.select_one("dd.horo_txt")
+
+        if not (rank_el and name_el and msg_el):
+            continue
+
+        rank_text = rank_el.get_text(strip=True)
+
+        m = re.search(r"(1[0-2]|[1-9])", rank_text)
+        if not m:
+            continue
+        rank = int(m.group(1))
+
+        sign = name_el.get_text(strip=True)
+        message = msg_el.get_text(" ", strip=True)
+        message = re.sub(r"\s+", " ", message).strip()
+
+        parsed.append({"rank": rank, "sign_jp": sign, "message_jp": message})
+
 
     if len(parsed) < 12:
-        raise ValueError(f"Rankings incomplete after parse: found {len(parsed)} items")
+        raise ValueError(f"Rankings incomplete: parsed {len(parsed)} items")
 
+
+    parsed.sort(key=lambda x: x["rank"])
     return parsed
-
 
 
 

@@ -4,6 +4,7 @@ import FortuneSummary from '../components/FortuneSummary';
 import FortuneCards from '../components/FortuneCards';
 import LuckyPanel from '../components/LuckyPanel';
 import ActionBar from '../components/ActionBar';
+import OhaasaRanking from '../components/OhaasaRanking';
 import { getTodayKstString, formatKstDisplay } from '../lib/dateKst';
 import { generateFortune } from '../lib/fortuneEngine';
 import { saveFortune } from '../lib/storage';
@@ -64,7 +65,10 @@ function Result() {
         <LuckyPanel lucky={fortune.lucky} />
         <ActionBar onBack={() => navigate('/')} onShare={handleShare} shareLabel={shareLabel} />
       </div>
-      <FortuneCards fortunes={fortune.fortunes} />
+      <div className="result-stack">
+        <FortuneCards fortunes={fortune.fortunes} />
+        <OhaasaRanking />
+      </div>
     </div>
   );
 }

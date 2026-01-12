@@ -153,6 +153,149 @@ a {
   margin-bottom: 20px;
 }
 
+.home-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.result-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(20px, 3.5vw, 26px);
+}
+
+.section-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.fortune-rank-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.status-banner {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 123, 156, 0.12);
+  border: 1px solid rgba(255, 123, 156, 0.35);
+  color: var(--warning);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.rank-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.rank-card {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  position: relative;
+}
+
+.rank-top {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 16px 40px rgba(124, 108, 255, 0.35);
+}
+
+.rank-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: rgba(124, 108, 255, 0.2);
+  color: var(--text);
+  border: 1px solid rgba(124, 108, 255, 0.6);
+}
+
+.rank-1 {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(124, 108, 255, 0.2));
+  color: #fff3b0;
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.35), rgba(109, 214, 255, 0.18));
+  color: #e9f1ff;
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.35), rgba(255, 123, 216, 0.18));
+  color: #ffd6b0;
+}
+
+.rank-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rank-message {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.rank-translation-warning {
+  margin: 0;
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rank-score {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.rank-categories {
+  display: grid;
+  gap: 10px;
+}
+
+.rank-category {
+  display: grid;
+  gap: 6px;
+}
+
+.rank-category-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.mini-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.mini-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-3), var(--accent-2));
+}
+
 .grid {
   display: grid;
   gap: 16px;

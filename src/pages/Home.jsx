@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BirthInputCard from '../components/BirthInputCard';
+import OhaasaRanking from '../components/OhaasaRanking';
 
 function Home() {
   const navigate = useNavigate();
@@ -33,7 +34,18 @@ function Home() {
     navigate(`/result?birthdate=${birthdate}`);
   };
 
-  return <BirthInputCard birthdate={birthdate} error={error} onChange={handleChange} onSubmit={handleSubmit} disabled={!birthdate || !!error} />;
+  return (
+    <div className="home-stack">
+      <BirthInputCard
+        birthdate={birthdate}
+        error={error}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        disabled={!birthdate || !!error}
+      />
+      <OhaasaRanking />
+    </div>
+  );
 }
 
 export default Home;

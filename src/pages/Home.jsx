@@ -1,46 +1,25 @@
-import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BirthInputCard from '../components/BirthInputCard';
 
 function Home() {
   const navigate = useNavigate();
-  const [birthdate, setBirthdate] = useState('');
-  const [error, setError] = useState('');
-
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
-  const validate = (value) => {
-    if (!value) {
-      return '생년월일을 입력해주세요.';
-    }
-    if (value > today) {
-      return '미래 날짜는 입력할 수 없어요.';
-    }
-    return '';
-  };
-
-  const handleChange = (value) => {
-    setBirthdate(value);
-    setError(validate(value));
-  };
-
-  const handleSubmit = () => {
-    const validation = validate(birthdate);
-    if (validation) {
-      setError(validation);
-      return;
-    }
-    navigate(`/result?birthdate=${birthdate}`);
-  };
 
   return (
-    <BirthInputCard
-      birthdate={birthdate}
-      error={error}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      disabled={!birthdate || !!error}
-    />
+    <div className="home-stack">
+      <section className="section">
+        <div className="glass-card start-card">
+          <h2 className="section-title">오늘의 운세 시작하기</h2>
+          <p className="section-subtitle">원하는 메뉴를 선택해서 바로 이동하세요.</p>
+          <div className="start-actions">
+            <button className="button" onClick={() => navigate('/input')}>
+              생년월일 입력하기
+            </button>
+            <button className="button secondary-button" onClick={() => navigate('/ranking')}>
+              오하아사 전체 순위 보기
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 

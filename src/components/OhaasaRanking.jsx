@@ -16,6 +16,7 @@ const formatDate = (value) => {
 function OhaasaRanking() {
   const [data, setData] = useState({ status: 'loading', rankings: [], error_message: null });
   const [fetchError, setFetchError] = useState('');
+  const [expandedRank, setExpandedRank] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,51 +54,60 @@ function OhaasaRanking() {
         ? data.error_message || '일부 번역이 제공되지 않습니다.'
         : '';
 
+  const handleToggle = (rank) => {
+    setExpandedRank((prev) => (prev === rank ? null : rank));
+  };
+
   return (
     <section className="section">
       <div className="fortune-rank-header">
         <div>
-          <h2 className="section-title">오늘의 오하아사 순위</h2>
-          <p className="section-subtitle">아사히 오하아사 별자리 운세를 기반으로 정리했어요.</p>
+          <h2 className="section-title">오하아사 전체 순위</h2>
+          <p className="section-subtitle">순위를 눌러 상세 멘트를 확인해보세요.</p>
         </div>
         <span className="tag">{formatDate(data.date_kst) || '업데이트 대기'}</span>
       </div>
       {statusMessage && <div className="status-banner">{statusMessage}</div>}
-      <div className="rank-grid">
+      <div className="ranking-list">
         {rankings.map((item) => {
-          const isTop = item.rank <= 3;
           const message = item.message_ko || item.message_jp;
+          const isExpanded = expandedRank === item.rank;
           return (
-            <article key={`${item.rank}-${item.sign_jp}`} className={`glass-card rank-card ${isTop ? 'rank-top' : ''}`}>
-              <div className="rank-card-header">
-                <div className={`rank-badge rank-${item.rank}`}>#{item.rank}</div>
-                <div>
+            <div key={`${item.rank}-${item.sign_jp}`} className={`glass-card ranking-item ${isExpanded ? 'open' : ''}`}>
+              <button className="ranking-toggle" type="button" onClick={() => handleToggle(item.rank)}>
+                <span className={`rank-badge rank-${item.rank}`}>#{item.rank}</span>
+                <div className="ranking-sign">
                   <h3>{item.sign_ko || '알 수 없음'}</h3>
                   <p className="rank-subtitle">{item.sign_jp}</p>
                 </div>
-              </div>
-              <p className="rank-message">{message}</p>
-              {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
-              <div className="rank-score">
-                <span>overall {item.scores?.overall ?? 0}점</span>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${item.scores?.overall ?? 0}%` }} />
-                </div>
-              </div>
-              <div className="rank-categories">
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                  <div key={key} className="rank-category">
-                    <div className="rank-category-label">
-                      <span>{label}</span>
-                      <span>{item.scores?.[key] ?? 0}</span>
-                    </div>
-                    <div className="mini-bar">
-                      <div className="mini-fill" style={{ width: `${item.scores?.[key] ?? 0}%` }} />
+                <span className="ranking-hint">{isExpanded ? '닫기' : '자세히'}</span>
+              </button>
+              {isExpanded && (
+                <div className="ranking-details">
+                  <p className="rank-message">{message}</p>
+                  {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
+                  <div className="rank-score">
+                    <span>overall {item.scores?.overall ?? 0}점</span>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${item.scores?.overall ?? 0}%` }} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </article>
+                  <div className="rank-categories">
+                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                      <div key={key} className="rank-category">
+                        <div className="rank-category-label">
+                          <span>{label}</span>
+                          <span>{item.scores?.[key] ?? 0}</span>
+                        </div>
+                        <div className="mini-bar">
+                          <div className="mini-fill" style={{ width: `${item.scores?.[key] ?? 0}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

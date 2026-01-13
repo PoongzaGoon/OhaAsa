@@ -264,8 +264,8 @@ const pickTone = (score) => {
   return 'high';
 };
 
-const createFortuneItem = (key, rng) => {
-  const score = rng.nextInt(25, 98);
+const createFortuneItem = (key, rng, scoreRange = null) => {
+  const score = scoreRange ? rng.nextInt(scoreRange.min, scoreRange.max) : rng.nextInt(25, 98);
   const tone = pickTone(score);
   const bucket = pools[key];
   const choice = rng.pick(bucket.entries[tone]);
@@ -279,10 +279,21 @@ const createFortuneItem = (key, rng) => {
   };
 };
 
-export const generateFortune = (birthdate, todayKst) => {
+const getOverallRangeByRank = (rank) => {
+  if (rank >= 1 && rank <= 3) return { min: 85, max: 100 };
+  if (rank >= 4 && rank <= 6) return { min: 65, max: 85 };
+  if (rank >= 7 && rank <= 9) return { min: 45, max: 65 };
+  if (rank >= 10 && rank <= 12) return { min: 20, max: 45 };
+  return null;
+};
+
+export const generateFortune = (birthdate, todayKst, rank = null) => {
   const seed = `${todayKst}|${birthdate}|ohahasa-v1`;
   const rng = createSeededRandom(seed);
-  const fortunes = ['total', 'love', 'study', 'money', 'health'].map((key) => createFortuneItem(key, rng));
+  const totalRange = getOverallRangeByRank(rank);
+  const fortunes = ['total', 'love', 'study', 'money', 'health'].map((key) =>
+    createFortuneItem(key, rng, key === 'total' ? totalRange : null)
+  );
 
   const colorPick = rng.pick(colors);
 

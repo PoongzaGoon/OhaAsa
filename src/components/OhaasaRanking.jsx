@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { normalizeOhaasaScores } from '../lib/fortuneScores';
 
 const CATEGORY_LABELS = {
   total: '총운',
@@ -72,6 +73,7 @@ function OhaasaRanking() {
         {rankings.map((item) => {
           const message = item.message_ko || item.message_jp;
           const isExpanded = expandedRank === item.rank;
+                    const scores = normalizeOhaasaScores(item.scores) || {};
           return (
             <div key={`${item.rank}-${item.sign_jp}`} className={`glass-card ranking-item ${isExpanded ? 'open' : ''}`}>
               <button className="ranking-toggle" type="button" onClick={() => handleToggle(item.rank)}>
@@ -87,9 +89,9 @@ function OhaasaRanking() {
                   <p className="rank-message">{message}</p>
                   {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
                   <div className="rank-score">
-                    <span>overall {item.scores?.overall ?? 0}점</span>
+                    <span>overall {scores.overall ?? 0}점</span>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${item.scores?.overall ?? 0}%` }} />
+                      <div className="progress-fill" style={{ width: `${scores.overall ?? 0}%` }} />
                     </div>
                   </div>
                   <div className="rank-categories">
@@ -97,10 +99,10 @@ function OhaasaRanking() {
                       <div key={key} className="rank-category">
                         <div className="rank-category-label">
                           <span>{label}</span>
-                          <span>{item.scores?.[key] ?? 0}</span>
+                          <span>{scores[key] ?? 0}</span>
                         </div>
                         <div className="mini-bar">
-                          <div className="mini-fill" style={{ width: `${item.scores?.[key] ?? 0}%` }} />
+                          <div className="mini-fill" style={{ width: `${scores[key] ?? 0}%` }} />
                         </div>
                       </div>
                     ))}

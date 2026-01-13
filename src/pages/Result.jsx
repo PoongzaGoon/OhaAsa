@@ -8,6 +8,7 @@ import { getTodayKstString, formatKstDisplay } from '../lib/dateKst';
 import { generateFortune } from '../lib/fortuneEngine';
 import { getWesternZodiac } from '../lib/zodiacWestern';
 import { saveFortune } from '../lib/storage';
+import { normalizeOhaasaScores } from '../lib/fortuneScores';
 
 const isValidBirthdate = (value, today) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -31,6 +32,7 @@ function Result() {
         return;
       }
       let rank = null;
+      let scoreOverrides = null;
       try {
         const response = await fetch('/fortune.json', { cache: 'no-store' });
         if (response.ok) {
@@ -38,12 +40,14 @@ function Result() {
           const westernZodiac = getWesternZodiac(birthdate);
           const match = payload.rankings?.find((item) => item.sign_ko === westernZodiac);
           rank = match?.rank ?? null;
+          scoreOverrides = normalizeOhaasaScores(match?.scores);
         }
       } catch (error) {
         rank = null;
+        scoreOverrides = null;
       }
       if (cancelled) return;
-      const next = generateFortune(birthdate, todayKst, rank);
+      const next = generateFortune(birthdate, todayKst, { rank, scores: scoreOverrides });
       setFortune(next);
       saveFortune(next);
     };

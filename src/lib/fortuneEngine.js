@@ -1,6 +1,7 @@
 import { createSeededRandom } from './seedRandom';
 import { getWesternZodiac } from './zodiacWestern';
 import { getChineseZodiac } from './zodiacChinese';
+import { normalizeOhaasaScores } from './fortuneScores';
 
 const toneLabel = {
   low: '주의',
@@ -264,8 +265,13 @@ const pickTone = (score) => {
   return 'high';
 };
 
-const createFortuneItem = (key, rng, scoreRange = null) => {
-  const score = scoreRange ? rng.nextInt(scoreRange.min, scoreRange.max) : rng.nextInt(25, 98);
+const createFortuneItem = (key, rng, scoreRange = null, scoreOverrides = null) => {
+  const scoreOverride = scoreOverrides?.[key];
+  const score = Number.isFinite(scoreOverride)
+    ? scoreOverride
+    : scoreRange
+      ? rng.nextInt(scoreRange.min, scoreRange.max)
+      : rng.nextInt(25, 98);
   const tone = pickTone(score);
   const bucket = pools[key];
   const choice = rng.pick(bucket.entries[tone]);
@@ -287,12 +293,14 @@ const getOverallRangeByRank = (rank) => {
   return null;
 };
 
-export const generateFortune = (birthdate, todayKst, rank = null) => {
+export const generateFortune = (birthdate, todayKst, options = {}) => {
+  const { rank = null, scores = null } = options;
   const seed = `${todayKst}|${birthdate}|ohahasa-v1`;
   const rng = createSeededRandom(seed);
-  const totalRange = getOverallRangeByRank(rank);
+  const normalizedScores = normalizeOhaasaScores(scores);
+  const totalRange = normalizedScores?.total == null ? getOverallRangeByRank(rank) : null;
   const fortunes = ['total', 'love', 'study', 'money', 'health'].map((key) =>
-    createFortuneItem(key, rng, key === 'total' ? totalRange : null)
+    createFortuneItem(key, rng, key === 'total' ? totalRange : null, normalizedScores)
   );
 
   const colorPick = rng.pick(colors);

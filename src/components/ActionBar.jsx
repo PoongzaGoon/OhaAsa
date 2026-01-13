@@ -1,4 +1,4 @@
-function ActionBar({ onBack, onShare, shareLabel }) {
+function ActionBar({ onBack, onShare, onRanking, shareLabel }) {
   return (
     <section className="section">
       <div className="actions">
@@ -8,6 +8,11 @@ function ActionBar({ onBack, onShare, shareLabel }) {
         <button className="button" onClick={onShare}>
           {shareLabel}
         </button>
+        {onRanking && (
+          <button className="button secondary-button" onClick={onRanking}>
+            오하아사 전체 순위 보기
+          </button>
+        )}
       </div>
     </section>
   );

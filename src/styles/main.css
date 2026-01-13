@@ -296,6 +296,46 @@ a {
   background: linear-gradient(90deg, var(--accent-3), var(--accent-2));
 }
 
+.ranking-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ranking-item {
+  padding: 16px;
+}
+
+.ranking-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ranking-sign h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.ranking-hint {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ranking-details {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
 .grid {
   display: grid;
   gap: 16px;
@@ -407,6 +447,17 @@ a {
   padding: 20px;
   display: grid;
   gap: 16px;
+}
+
+.start-card {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.start-actions {
+  display: grid;
+  gap: 12px;
 }
 
 .summary-top {

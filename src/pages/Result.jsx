@@ -4,9 +4,9 @@ import FortuneSummary from '../components/FortuneSummary';
 import FortuneCards from '../components/FortuneCards';
 import LuckyPanel from '../components/LuckyPanel';
 import ActionBar from '../components/ActionBar';
-import OhaasaRanking from '../components/OhaasaRanking';
 import { getTodayKstString, formatKstDisplay } from '../lib/dateKst';
 import { generateFortune } from '../lib/fortuneEngine';
+import { getWesternZodiac } from '../lib/zodiacWestern';
 import { saveFortune } from '../lib/storage';
 
 const isValidBirthdate = (value, today) => {
@@ -24,13 +24,34 @@ function Result() {
   const birthdate = searchParams.get('birthdate') || '';
 
   useEffect(() => {
-    if (!isValidBirthdate(birthdate, todayKst)) {
-      navigate('/', { replace: true });
-      return;
-    }
-    const next = generateFortune(birthdate, todayKst);
-    setFortune(next);
-    saveFortune(next);
+    let cancelled = false;
+    const load = async () => {
+      if (!isValidBirthdate(birthdate, todayKst)) {
+        navigate('/input', { replace: true });
+        return;
+      }
+      let rank = null;
+      try {
+        const response = await fetch('/fortune.json', { cache: 'no-store' });
+        if (response.ok) {
+          const payload = await response.json();
+          const westernZodiac = getWesternZodiac(birthdate);
+          const match = payload.rankings?.find((item) => item.sign_ko === westernZodiac);
+          rank = match?.rank ?? null;
+        }
+      } catch (error) {
+        rank = null;
+      }
+      if (cancelled) return;
+      const next = generateFortune(birthdate, todayKst, rank);
+      setFortune(next);
+      saveFortune(next);
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [birthdate, todayKst, navigate]);
 
   if (!fortune) return null;
@@ -63,11 +84,15 @@ function Result() {
           chineseZodiac={fortune.chineseZodiac}
         />
         <LuckyPanel lucky={fortune.lucky} />
-        <ActionBar onBack={() => navigate('/')} onShare={handleShare} shareLabel={shareLabel} />
+        <ActionBar
+          onBack={() => navigate('/input')}
+          onShare={handleShare}
+          onRanking={() => navigate('/ranking')}
+          shareLabel={shareLabel}
+        />
       </div>
       <div className="result-stack">
         <FortuneCards fortunes={fortune.fortunes} />
-        <OhaasaRanking />
       </div>
     </div>
   );

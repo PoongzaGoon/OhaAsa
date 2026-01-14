@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { normalizeOhaasaScores } from '../lib/fortuneScores';
+import { getZodiacColorStyle } from '../lib/zodiacColors';
 
 const CATEGORY_LABELS = {
   total: '총운',
@@ -106,7 +107,11 @@ function OhaasaRanking() {
           const scores = normalizeOhaasaScores(item.scores) || {};
           const detailId = `ranking-detail-${item.rank}`;
           return (
-            <div key={`${item.rank}-${item.sign_jp}`} className={`glass-card ranking-item ${isExpanded ? 'open' : ''}`}>
+            <div
+              key={`${item.rank}-${item.sign_jp}`}
+              className={`glass-card ranking-item ${isExpanded ? 'open' : ''}`}
+              style={getZodiacColorStyle(item.sign_ko)}
+            >
               <button
                 className="ranking-toggle"
                 type="button"

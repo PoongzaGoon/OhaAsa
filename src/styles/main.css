@@ -391,6 +391,10 @@ a {
   border: 1px solid var(--border);
 }
 
+.secondary-button:hover:not(:disabled) {
+  color: var(--panel);
+}
+
 .tag {
   display: inline-flex;
   align-items: center;

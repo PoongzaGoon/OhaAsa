@@ -21,7 +21,13 @@ function App() {
     }
   }, [location, displayLocation]);
 
-  const handleAnimationEnd = () => {
+  const handleTransitionEnd = (event) => {
+    if (
+      event.target !== event.currentTarget ||
+      event.propertyName !== 'opacity'
+    ) {
+      return;
+    }
     if (transitionStage === 'fade-out') {
       setDisplayLocation(location);
       setTransitionStage('fade-in');
@@ -30,7 +36,7 @@ function App() {
   return (
     <div
       className={`page-transition ${transitionStage}`}
-      onAnimationEnd={handleAnimationEnd}
+      onTransitionEnd={handleTransitionEnd}
     >
       <Layout>
         <Routes location={displayLocation}>

@@ -1,9 +1,12 @@
-function FortuneCards({ fortunes }) {
+import { getZodiacColorStyle } from '../lib/zodiacColors';
+
+function FortuneCards({ fortunes, zodiacName }) {
+  const zodiacStyle = getZodiacColorStyle(zodiacName);
   return (
     <section className="section">
       <div className="grid cards-grid two-column">
         {fortunes.map((item) => (
-          <div key={item.key} className="glass-card card">
+          <div key={item.key} className="glass-card card zodiac-card" style={zodiacStyle}>
             <div className="meta">
               <span className="tag">{item.name}</span>
               <span className="tag">{item.toneLabel}</span>

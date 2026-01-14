@@ -96,7 +96,7 @@ function Result() {
         />
       </div>
       <div className="result-stack">
-        <FortuneCards fortunes={fortune.fortunes} />
+        <FortuneCards fortunes={fortune.fortunes} zodiacName={fortune.westernZodiac} />
       </div>
     </div>
   );

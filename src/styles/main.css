@@ -2,10 +2,10 @@
   color-scheme: light;
   --bg-primary: #fafafa;
   --panel: #ffffff;
-  --border: #d4d4d8;
+  --border: #e5e7eb;
   --text: #111111;
-  --muted: #555555;
-  --accent: #0f172a;
+  --muted: #222222;
+  --accent: #111111;
   --accent-soft: #e2e8f0;
   --success: #1f7a5c;
   --warning: #a16207;
@@ -56,7 +56,7 @@ a {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 
 .header {
@@ -131,9 +131,9 @@ a {
 .status-banner {
   padding: 12px 14px;
   border-radius: var(--radius);
-  background: #fff8e1;
-  border: 1px solid #f4d36b;
-  color: var(--warning);
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  color: var(--text);
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -152,8 +152,7 @@ a {
 }
 
 .rank-top {
-  border-color: var(--accent);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+  border-color: var(--border);
 }
 
 .rank-card-header {
@@ -170,15 +169,15 @@ a {
   place-items: center;
   font-weight: 700;
   border: 1px solid var(--border);
-  color: var(--accent);
-  background: #f5f5f5;
+  color: var(--text);
+  background: #ffffff;
 }
 
 .rank-1,
 .rank-2,
 .rank-3 {
   background: #f8fafc;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .rank-subtitle {
@@ -194,7 +193,7 @@ a {
 
 .rank-translation-warning {
   margin: 0;
-  color: var(--warning);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
 }
@@ -203,7 +202,7 @@ a {
   display: grid;
   gap: 8px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .rank-categories {
@@ -235,7 +234,8 @@ a {
 .mini-fill {
   height: 100%;
   width: 0;
-  background: var(--accent);
+  background: var(--zodiac-color, var(--accent));
+  box-shadow: 0 0 8px var(--zodiac-color-glow, rgba(0, 0, 0, 0.1));
   transition: width 0.7s ease;
 }
 
@@ -247,10 +247,12 @@ a {
 .ranking-item {
   padding: 16px;
   border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
 }
 
 .ranking-item.open {
-  border-color: var(--accent);
+  border-color: var(--border);
 }
 
 .ranking-toggle {
@@ -274,7 +276,7 @@ a {
 
 .ranking-hint {
   margin-left: auto;
-  color: var(--accent);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
   border: 1px solid var(--border);
@@ -359,7 +361,7 @@ a {
 }
 
 .error {
-  color: var(--danger);
+  color: var(--text);
   font-weight: 600;
   font-size: 14px;
 }
@@ -368,11 +370,11 @@ a {
   border: 1px solid var(--accent);
   padding: 12px 16px;
   border-radius: var(--radius);
-  color: var(--panel);
+  color: var(--text);
   font-weight: 600;
   cursor: pointer;
-  background: var(--accent);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  background: #ffffff;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .button:disabled {
@@ -381,18 +383,18 @@ a {
 }
 
 .button:hover:not(:disabled) {
-  background: #1e293b;
-  border-color: #1e293b;
+  background: #f4f4f5;
+  border-color: #111111;
 }
 
 .secondary-button {
   background: var(--panel);
-  color: var(--accent);
+  color: var(--text);
   border: 1px solid var(--border);
 }
 
 .secondary-button:hover:not(:disabled) {
-  color: var(--panel);
+  color: var(--text);
 }
 
 .tag {
@@ -450,6 +452,16 @@ a {
   overflow: hidden;
 }
 
+.zodiac-card::before,
+.ranking-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--zodiac-color, var(--border));
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
 .card h3 {
   margin: 0;
   font-size: 18px;
@@ -460,7 +472,7 @@ a {
   align-items: center;
   gap: 12px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .progress-bar {
@@ -475,7 +487,8 @@ a {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--accent);
+  background: var(--zodiac-color, var(--accent));
+  box-shadow: 0 0 8px var(--zodiac-color-glow, rgba(0, 0, 0, 0.1));
   width: 0;
   transition: width 0.8s ease;
 }
@@ -514,11 +527,11 @@ a {
 }
 
 .tip {
-  color: var(--success);
+  color: var(--text);
 }
 
 .caution {
-  color: var(--warning);
+  color: var(--text);
 }
 
 .lucky-panel {
@@ -538,7 +551,7 @@ a {
 .lucky-item {
   padding: 10px 12px;
   border-radius: var(--radius);
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid var(--border);
 }
 

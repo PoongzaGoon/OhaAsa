@@ -31,48 +31,7 @@ const initScoreObserver = () => {
   animateScoreBars();
 };
 
-const initPageTransitions = () => {
-  const body = document.body;
-  const applyEnter = () => {
-    body.classList.remove('page-exit');
-    body.classList.add('page-enter');
-    requestAnimationFrame(() => {
-      body.classList.add('page-enter-active');
-    });
-    window.setTimeout(() => {
-      body.classList.remove('page-enter');
-      body.classList.remove('page-enter-active');
-    }, 320);
-  };
-
-  applyEnter();
-
-  window.addEventListener('pageshow', () => {
-    applyEnter();
-  });
-
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a');
-    if (!link) return;
-    if (link.target === '_blank' || link.hasAttribute('download')) return;
-    if (link.origin !== window.location.origin) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const isSamePage =
-      link.pathname === window.location.pathname &&
-      link.search === window.location.search &&
-      link.hash;
-    if (isSamePage) return;
-    if (prefersReducedMotion()) return;
-    event.preventDefault();
-    body.classList.add('page-exit');
-    window.setTimeout(() => {
-      window.location.href = link.href;
-    }, 200);
-  });
-};
-
 export const initUiEffects = () => {
   if (typeof window === 'undefined') return;
   initScoreObserver();
-  initPageTransitions();
 };

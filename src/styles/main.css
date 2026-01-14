@@ -548,18 +548,27 @@ a {
   gap: 10px;
 }
 
-.page-enter {
-  opacity: 0;
-}
-
-.page-enter.page-enter-active {
+.page-transition {
   opacity: 1;
-  transition: opacity 0.3s ease;
+  transform: translateY(0);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+  will-change: opacity, transform;
 }
 
-.page-exit {
+.page-transition.pre-fade-in {
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: translateY(8px);
+  transition: none;
+}
+
+.page-transition.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition.fade-out {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 @media (max-width: 768px) {
@@ -584,8 +593,7 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-enter.page-enter-active,
-  .page-exit,
+  .page-transition,
   .progress-fill,
   .mini-fill,
   .ranking-details {

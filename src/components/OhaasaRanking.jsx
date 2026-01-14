@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { normalizeOhaasaScores } from '../lib/fortuneScores';
 
 const CATEGORY_LABELS = {
@@ -18,6 +18,8 @@ function OhaasaRanking() {
   const [data, setData] = useState({ status: 'loading', rankings: [], error_message: null });
   const [fetchError, setFetchError] = useState('');
   const [expandedRank, setExpandedRank] = useState(null);
+  const detailRefs = useRef(new Map());
+  const [detailHeights, setDetailHeights] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +61,34 @@ function OhaasaRanking() {
     setExpandedRank((prev) => (prev === rank ? null : rank));
   };
 
+  const setDetailRef = (rank) => (node) => {
+    if (node) {
+      detailRefs.current.set(rank, node);
+    } else {
+      detailRefs.current.delete(rank);
+    }
+  };
+
+  const updateDetailHeight = (rank) => {
+    const node = detailRefs.current.get(rank);
+    if (!node) return;
+    setDetailHeights((prev) => ({ ...prev, [rank]: node.scrollHeight }));
+  };
+
+  useEffect(() => {
+    if (expandedRank == null) return;
+    updateDetailHeight(expandedRank);
+  }, [expandedRank, rankings]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (expandedRank == null) return;
+      updateDetailHeight(expandedRank);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [expandedRank]);
+
   return (
     <section className="section">
       <div className="fortune-rank-header">
@@ -73,42 +103,53 @@ function OhaasaRanking() {
         {rankings.map((item) => {
           const message = item.message_ko || item.message_jp;
           const isExpanded = expandedRank === item.rank;
-                    const scores = normalizeOhaasaScores(item.scores) || {};
+          const scores = normalizeOhaasaScores(item.scores) || {};
+          const detailId = `ranking-detail-${item.rank}`;
           return (
             <div key={`${item.rank}-${item.sign_jp}`} className={`glass-card ranking-item ${isExpanded ? 'open' : ''}`}>
-              <button className="ranking-toggle" type="button" onClick={() => handleToggle(item.rank)}>
+              <button
+                className="ranking-toggle"
+                type="button"
+                onClick={() => handleToggle(item.rank)}
+                aria-expanded={isExpanded}
+                aria-controls={detailId}
+              >
                 <span className={`rank-badge rank-${item.rank}`}>#{item.rank}</span>
                 <div className="ranking-sign">
                   <h3>{item.sign_ko || '알 수 없음'}</h3>
                   <p className="rank-subtitle">{item.sign_jp}</p>
                 </div>
-                <span className="ranking-hint">{isExpanded ? '닫기' : '자세히'}</span>
+                <span className="ranking-hint">{isExpanded ? '닫기' : '자세히 보기'}</span>
               </button>
-              {isExpanded && (
-                <div className="ranking-details">
-                  <p className="rank-message">{message}</p>
-                  {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
-                  <div className="rank-score">
-                    <span>overall {scores.overall ?? 0}점</span>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${scores.overall ?? 0}%` }} />
-                    </div>
-                  </div>
-                  <div className="rank-categories">
-                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                      <div key={key} className="rank-category">
-                        <div className="rank-category-label">
-                          <span>{label}</span>
-                          <span>{scores[key] ?? 0}</span>
-                        </div>
-                        <div className="mini-bar">
-                          <div className="mini-fill" style={{ width: `${scores[key] ?? 0}%` }} />
-                        </div>
-                      </div>
-                    ))}
+              <div
+                className="ranking-details"
+                id={detailId}
+                ref={setDetailRef(item.rank)}
+                aria-hidden={!isExpanded}
+                style={{ maxHeight: isExpanded ? `${detailHeights[item.rank] ?? 0}px` : '0px' }}
+              >
+                <p className="rank-message">{message}</p>
+                {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
+                <div className="rank-score">
+                  <span>overall {scores.overall ?? 0}점</span>
+                  <div className="progress-bar score-bar">
+                    <div className="progress-fill score-fill" data-score={scores.overall ?? 0} />
                   </div>
                 </div>
-              )}
+                <div className="rank-categories">
+                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                    <div key={key} className="rank-category">
+                      <div className="rank-category-label">
+                        <span>{label}</span>
+                        <span>{scores[key] ?? 0}</span>
+                      </div>
+                      <div className="mini-bar">
+                        <div className="mini-fill" data-score={scores[key] ?? 0} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           );
         })}

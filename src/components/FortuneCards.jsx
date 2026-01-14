@@ -12,8 +12,8 @@ function FortuneCards({ fortunes }) {
               <span style={{ fontSize: 28 }}>{item.score}</span>
               <span>/ 100</span>
             </div>
-            <div className="progress-bar" aria-label={`${item.name} 점수`}>
-              <div className="progress-fill" style={{ width: `${item.score}%` }} />
+            <div className="progress-bar score-bar" aria-label={`${item.name} 점수`}>
+              <div className="progress-fill score-fill" data-score={item.score} />
             </div>
             <div className="headline">{item.headline}</div>
             <div className="detail">{item.detail}</div>

@@ -90,7 +90,7 @@ function Input() {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/');
   };
 
   return (

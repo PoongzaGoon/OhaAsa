@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BirthInputCard from '../components/BirthInputCard';
+import { clearBirthDate, getBirthDate, setBirthDate } from '../lib/storage';
 
 const getDaysInMonth = (year, month) => {
   if (!year || !month) {
@@ -32,6 +33,32 @@ function Input() {
     return '';
   };
 
+  const parseBirthDate = (value) => {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+    const [, year, month, day] = match;
+    const daysInMonth = getDaysInMonth(year, month);
+    if (Number(day) > daysInMonth) {
+      return null;
+    }
+    return { year, month, day };
+  };
+
+  useEffect(() => {
+    const savedBirthDate = getBirthDate();
+    if (!savedBirthDate) {
+      return;
+    }
+    const parts = parseBirthDate(savedBirthDate);
+    if (!parts) {
+      return;
+    }
+    setBirthParts(parts);
+    setError(validate(savedBirthDate));
+  }, [today]);
+
   const handlePartsChange = (nextParts) => {
     const daysInMonth = getDaysInMonth(nextParts.year, nextParts.month);
     const normalizedDay =
@@ -52,7 +79,18 @@ function Input() {
       setError(validation);
       return;
     }
+    setBirthDate(birthdate);
     navigate(`/result?birthdate=${birthdate}`);
+  };
+
+  const handleClear = () => {
+    clearBirthDate();
+    setBirthParts({ year: '', month: '', day: '' });
+    setError('');
+  };
+
+  const handleBack = () => {
+    navigate(-1);
   };
 
   return (
@@ -61,6 +99,8 @@ function Input() {
       error={error}
       onChangeParts={handlePartsChange}
       onSubmit={handleSubmit}
+      onClear={handleClear}
+      onBack={handleBack}
       disabled={!birthdate || !!error}
     />
   );

@@ -355,6 +355,22 @@ a {
   font-size: 16px;
 }
 
+.date-select-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.date-select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--text);
+  font-size: 16px;
+}
+
 .helper {
   color: var(--muted);
   font-size: 14px;
@@ -611,6 +627,10 @@ a {
   .actions .button {
     flex: 1;
     text-align: center;
+  }
+
+  .date-select-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

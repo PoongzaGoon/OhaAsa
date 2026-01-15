@@ -5,7 +5,7 @@ const getDaysInMonth = (year, month) => {
   return new Date(Number(year), Number(month), 0).getDate();
 };
 
-function BirthInputCard({ birthParts, error, onChangeParts, onSubmit, disabled }) {
+function BirthInputCard({ birthParts, error, onChangeParts, onSubmit, onClear, onBack, disabled }) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1899 }, (_, index) => String(currentYear - index));
   const months = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
@@ -60,6 +60,12 @@ function BirthInputCard({ birthParts, error, onChangeParts, onSubmit, disabled }
           {error ? <div className="error">{error}</div> : <div className="helper">연/월/일을 선택하면 자동으로 저장돼요.</div>}
           <button className="button" onClick={onSubmit} disabled={disabled}>
             오늘의 운세 보기
+          </button>
+          <button className="button secondary-button" onClick={onClear} type="button">
+            저장된 정보 삭제
+          </button>
+          <button className="button secondary-button" onClick={onBack} type="button">
+            뒤로가기
           </button>
         </div>
       </div>

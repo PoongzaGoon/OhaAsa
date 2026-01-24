@@ -20,23 +20,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Install system deps for Chromium
         run: |
-          sudo apt-get update
-          # Ubuntu 버전에 따라 libasound2 / libasound2t64가 달라서 둘 다 시도
-          sudo apt-get install -y \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-            libgbm1 libpango-1.0-0 libcairo2
-          sudo apt-get install -y libasound2t64 || sudo apt-get install -y libasound2
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Install Playwright browser (Chromium)
-        run: python -m playwright install chromium
+      - name: Install Playwright (Chromium) with system deps
+        run: |
+          python -m playwright install --with-deps chromium
 
       - name: Fetch ohaasa fortune
         env:
@@ -52,6 +46,6 @@ jobs:
           fi
           git config user.name "ohaasa-bot"
           git config user.email "ohaasa-bot@users.noreply.github.com"
-          git add public/fortune.json
+          git add public/fortune.json scripts/cache/translate_cache.json || true
           git commit -m "chore: update fortune data"
           git push

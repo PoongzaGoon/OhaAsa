@@ -1,7 +1,7 @@
 {
   "source": "asahi_ohaasa",
-  "date_kst": "2026-01-24",
-  "updated_at_kst": "2026-01-24T17:38:11.890012+09:00",
+  "date_kst": "2026-01-25",
+  "updated_at_kst": "2026-01-25T05:02:57.192111+09:00",
   "status": "ok",
   "error_message": null,
   "rankings": [
@@ -12,12 +12,12 @@
       "message_jp": "魅力が輝き恋愛運ＵＰ♥ 相手をドキドキさせられるよ 電話でのやり取りがオススメ 新しいペンを使う",
       "message_ko": null,
       "scores": {
-        "overall": 96,
+        "overall": 98,
         "total": 100,
-        "love": 92,
-        "study": 100,
-        "money": 100,
-        "health": 99
+        "love": 94,
+        "study": 99,
+        "money": 95,
+        "health": 100
       }
     },
     {
@@ -27,12 +27,12 @@
       "message_jp": "思いがけないラッキーがある時 チラシの情報をチェック ランチにパスタを食べる",
       "message_ko": null,
       "scores": {
-        "overall": 93,
-        "total": 86,
-        "love": 94,
+        "overall": 91,
+        "total": 85,
+        "love": 98,
         "study": 99,
-        "money": 85,
-        "health": 96
+        "money": 91,
+        "health": 89
       }
     },
     {
@@ -42,12 +42,12 @@
       "message_jp": "面白い企画がどんどん浮かぶ日 休憩時間のおしゃべりにツキあり ご当地キャラの小物を買う",
       "message_ko": null,
       "scores": {
-        "overall": 88,
-        "total": 87,
-        "love": 96,
-        "study": 94,
-        "money": 84,
-        "health": 89
+        "overall": 85,
+        "total": 80,
+        "love": 88,
+        "study": 92,
+        "money": 87,
+        "health": 91
       }
     },
     {
@@ -57,12 +57,12 @@
       "message_jp": "これまでの経験が役に立つ予感 存分に腕をふるおう♪ 釣り堀に行く",
       "message_ko": null,
       "scores": {
-        "overall": 82,
-        "total": 75,
+        "overall": 84,
+        "total": 82,
         "love": 89,
-        "study": 78,
-        "money": 77,
-        "health": 82
+        "study": 79,
+        "money": 89,
+        "health": 86
       }
     },
     {
@@ -73,11 +73,11 @@
       "message_ko": null,
       "scores": {
         "overall": 79,
-        "total": 75,
-        "love": 72,
+        "total": 87,
+        "love": 83,
         "study": 77,
-        "money": 76,
-        "health": 84
+        "money": 86,
+        "health": 87
       }
     },
     {
@@ -87,12 +87,12 @@
       "message_jp": "困難を乗り越えるパワーあり！ 前向きな姿勢がＧＯＯＤ 左の耳たぶを軽くひっぱる",
       "message_ko": null,
       "scores": {
-        "overall": 72,
-        "total": 66,
-        "love": 69,
-        "study": 77,
-        "money": 72,
-        "health": 77
+        "overall": 70,
+        "total": 68,
+        "love": 64,
+        "study": 62,
+        "money": 62,
+        "health": 70
       }
     },
     {
@@ -102,12 +102,12 @@
       "message_jp": "未来の選択肢が広がりそう じっくり考えてから決断を ハンドクリームを左手から塗る",
       "message_ko": null,
       "scores": {
-        "overall": 67,
-        "total": 63,
-        "love": 66,
-        "study": 75,
-        "money": 60,
-        "health": 59
+        "overall": 69,
+        "total": 75,
+        "love": 71,
+        "study": 61,
+        "money": 73,
+        "health": 66
       }
     },
     {
@@ -117,12 +117,12 @@
       "message_jp": "約束の時間に遅刻するかも 早め早めの行動を心掛けて バスマットを新調する",
       "message_ko": null,
       "scores": {
-        "overall": 61,
-        "total": 56,
-        "love": 62,
-        "study": 54,
-        "money": 55,
-        "health": 69
+        "overall": 60,
+        "total": 55,
+        "love": 67,
+        "study": 65,
+        "money": 68,
+        "health": 63
       }
     },
     {
@@ -132,12 +132,12 @@
       "message_jp": "八方美人になり運気ダウン 自分の意思はハッキリ示すように 水色の小物を持ち歩く",
       "message_ko": null,
       "scores": {
-        "overall": 55,
-        "total": 50,
-        "love": 48,
-        "study": 51,
+        "overall": 57,
+        "total": 53,
+        "love": 64,
+        "study": 57,
         "money": 55,
-        "health": 51
+        "health": 50
       }
     },
     {
@@ -147,12 +147,12 @@
       "message_jp": "集中力が続かずミスを連発 デスク周りを整理してみては？ アート作品を鑑賞する",
       "message_ko": null,
       "scores": {
-        "overall": 51,
-        "total": 53,
+        "overall": 52,
+        "total": 52,
         "love": 53,
-        "study": 59,
-        "money": 55,
-        "health": 46
+        "study": 46,
+        "money": 50,
+        "health": 58
       }
     },
     {
@@ -163,11 +163,11 @@
       "message_ko": null,
       "scores": {
         "overall": 48,
-        "total": 42,
-        "love": 48,
-        "study": 55,
-        "money": 52,
-        "health": 47
+        "total": 41,
+        "love": 41,
+        "study": 53,
+        "money": 54,
+        "health": 50
       }
     },
     {
@@ -177,12 +177,12 @@
       "message_jp": "トラブルが発生しアタフタ 心身の休息が必要になりそう きょうはゆっくり過ごしてね 書店に立ち寄る",
       "message_ko": null,
       "scores": {
-        "overall": 44,
-        "total": 52,
-        "love": 37,
-        "study": 36,
-        "money": 49,
-        "health": 48
+        "overall": 45,
+        "total": 38,
+        "love": 48,
+        "study": 49,
+        "money": 38,
+        "health": 42
       }
     }
   ]

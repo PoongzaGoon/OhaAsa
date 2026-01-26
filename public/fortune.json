@@ -1,188 +1,188 @@
 {
   "source": "asahi_ohaasa",
-  "date_kst": "2026-01-26",
-  "updated_at_kst": "2026-01-26T05:03:20.347496+09:00",
+  "date_kst": "2026-01-27",
+  "updated_at_kst": "2026-01-27T05:03:11.060237+09:00",
   "status": "ok",
   "error_message": null,
   "rankings": [
     {
       "rank": 1,
-      "sign_jp": "やぎ座",
-      "sign_ko": "염소자리",
-      "message_jp": "仲間からの評価が急上昇！ 得意分野をアピールしよう 皆の人気者になれるかも お好み焼きを作る",
+      "sign_jp": "おとめ座",
+      "sign_ko": "처녀자리",
+      "message_jp": "実力を発揮し大活躍！ 素晴らしい結果が出るかも 集中して取り組んでね カフェに行く",
       "message_ko": null,
       "scores": {
-        "overall": 96,
-        "total": 99,
-        "love": 100,
-        "study": 93,
-        "money": 90,
+        "overall": 95,
+        "total": 92,
+        "love": 88,
+        "study": 100,
+        "money": 89,
         "health": 92
       }
     },
     {
       "rank": 2,
-      "sign_jp": "おうし座",
-      "sign_ko": "황소자리",
-      "message_jp": "気になる人との会話が弾む日 ポジティブ思考が幸運のカギ 図書館で本を読む",
+      "sign_jp": "やぎ座",
+      "sign_ko": "염소자리",
+      "message_jp": "感性が磨かれ心豊かに 芸術に触れてみるとＧＯＯＤ 占いの本を読む",
       "message_ko": null,
       "scores": {
-        "overall": 92,
-        "total": 88,
-        "love": 89,
-        "study": 86,
-        "money": 96,
-        "health": 92
+        "overall": 94,
+        "total": 98,
+        "love": 98,
+        "study": 97,
+        "money": 100,
+        "health": 97
       }
     },
     {
       "rank": 3,
-      "sign_jp": "おとめ座",
-      "sign_ko": "처녀자리",
-      "message_jp": "センスが磨かれオシャレに ファッションアイテムを買うと◎ いつもより５分早く家を出る",
+      "sign_jp": "おうし座",
+      "sign_ko": "황소자리",
+      "message_jp": "今までの努力が実を結ぶ日 直感を信じて作業を進めて 星の画像を待ち受けにする",
       "message_ko": null,
       "scores": {
-        "overall": 86,
-        "total": 84,
-        "love": 90,
-        "study": 94,
-        "money": 90,
-        "health": 78
+        "overall": 89,
+        "total": 97,
+        "love": 92,
+        "study": 81,
+        "money": 94,
+        "health": 86
       }
     },
     {
       "rank": 4,
-      "sign_jp": "さそり座",
-      "sign_ko": "전갈자리",
-      "message_jp": "未知の世界に踏み出せそう 怖がらずにチャレンジしてね 小さな手鏡を持ち歩く",
+      "sign_jp": "かに座",
+      "sign_ko": "게자리",
+      "message_jp": "欲しかった物が手に入る予感 積極的に探してみてね 新しい傘を買う",
       "message_ko": null,
       "scores": {
-        "overall": 83,
-        "total": 75,
-        "love": 81,
-        "study": 91,
-        "money": 88,
-        "health": 91
+        "overall": 82,
+        "total": 90,
+        "love": 82,
+        "study": 80,
+        "money": 84,
+        "health": 87
       }
     },
     {
       "rank": 5,
-      "sign_jp": "うお座",
-      "sign_ko": "물고기자리",
-      "message_jp": "あなたのアイデアが大注目されるよ ちょっとした思いつきでも提案を エコバッグを使う",
+      "sign_jp": "さそり座",
+      "sign_ko": "전갈자리",
+      "message_jp": "仕事がテキパキ片づきそう 自分のペースを貫くと◎ キッチンにある鍋を磨く",
       "message_ko": null,
       "scores": {
-        "overall": 78,
-        "total": 72,
-        "love": 77,
-        "study": 78,
-        "money": 81,
-        "health": 83
+        "overall": 76,
+        "total": 68,
+        "love": 76,
+        "study": 76,
+        "money": 68,
+        "health": 76
       }
     },
     {
       "rank": 6,
-      "sign_jp": "かに座",
-      "sign_ko": "게자리",
-      "message_jp": "うれしい臨時収入に期待大 部屋の掃除をすると良いかも パンケーキを焼く",
+      "sign_jp": "うお座",
+      "sign_ko": "물고기자리",
+      "message_jp": "役に立つ情報をＧＥＴ 仲間との会話が幸運のカギ 好きな香りをハンカチにつける",
       "message_ko": null,
       "scores": {
-        "overall": 70,
-        "total": 78,
-        "love": 65,
-        "study": 70,
-        "money": 66,
-        "health": 73
-      }
-    },
-    {
-      "rank": 7,
-      "sign_jp": "みずがめ座",
-      "sign_ko": "물병자리",
-      "message_jp": "探していた物が見つかる予感 ネットショッピングにツキあり 橋を渡る",
-      "message_ko": null,
-      "scores": {
-        "overall": 66,
+        "overall": 72,
         "total": 68,
-        "love": 64,
-        "study": 61,
-        "money": 58,
+        "love": 65,
+        "study": 66,
+        "money": 69,
         "health": 64
       }
     },
     {
-      "rank": 8,
-      "sign_jp": "ふたご座",
-      "sign_ko": "쌍둥이자리",
-      "message_jp": "ひらめきを大切にしたい時 思いついたらメモをとって コーヒー専門店に行く",
+      "rank": 7,
+      "sign_jp": "てんびん座",
+      "sign_ko": "천칭자리",
+      "message_jp": "創作活動にツキあり♪ 眠っていた才能が開花するかも？ 出かける準備の順番を変える",
       "message_ko": null,
       "scores": {
-        "overall": 63,
-        "total": 58,
-        "love": 70,
-        "study": 58,
+        "overall": 65,
+        "total": 59,
+        "love": 57,
+        "study": 60,
         "money": 62,
-        "health": 66
+        "health": 57
+      }
+    },
+    {
+      "rank": 8,
+      "sign_jp": "みずがめ座",
+      "sign_ko": "물병자리",
+      "message_jp": "言葉の裏を読んでしまいそう 深く考えすぎないように シルバーのアイテムを身につける",
+      "message_ko": null,
+      "scores": {
+        "overall": 61,
+        "total": 55,
+        "love": 69,
+        "study": 53,
+        "money": 61,
+        "health": 57
       }
     },
     {
       "rank": 9,
-      "sign_jp": "てんびん座",
-      "sign_ko": "천칭자리",
-      "message_jp": "近寄りがたい雰囲気が出ているかも 気持ちに余裕ができるまで恋は休憩 キャラクターグッズを買う",
+      "sign_jp": "ふたご座",
+      "sign_ko": "쌍둥이자리",
+      "message_jp": "思いがうまく伝わらずガッカリ 肩の力を抜いてリラックス レンコン料理を作る",
       "message_ko": null,
       "scores": {
-        "overall": 56,
-        "total": 56,
-        "love": 59,
-        "study": 49,
-        "money": 51,
-        "health": 58
+        "overall": 59,
+        "total": 58,
+        "love": 55,
+        "study": 59,
+        "money": 64,
+        "health": 59
       }
     },
     {
       "rank": 10,
-      "sign_jp": "いて座",
-      "sign_ko": "사수자리",
-      "message_jp": "苦手な人と仕事をする事に… 相手を立てるとＧＯＯＤ 博物館に行く",
+      "sign_jp": "しし座",
+      "sign_ko": "사자자리",
+      "message_jp": "何だかヤル気が出ない時 あしたに回せるものはあしたやろう ジェスチャーゲームをする",
       "message_ko": null,
       "scores": {
-        "overall": 54,
-        "total": 48,
-        "love": 55,
-        "study": 48,
+        "overall": 52,
+        "total": 51,
+        "love": 49,
+        "study": 47,
         "money": 55,
-        "health": 47
+        "health": 56
       }
     },
     {
       "rank": 11,
-      "sign_jp": "おひつじ座",
-      "sign_ko": "양자리",
-      "message_jp": "計画の見直しが必要になりそう 一度 スタートに戻ってみては？ 丁寧に髪をブラッシングする",
+      "sign_jp": "いて座",
+      "sign_ko": "사수자리",
+      "message_jp": "頑張りたいのに体はクタクタ… きょうはゆっくり過ごしてね 夕焼けの写真を撮る",
       "message_ko": null,
       "scores": {
-        "overall": 47,
-        "total": 42,
-        "love": 46,
-        "study": 44,
-        "money": 44,
-        "health": 43
+        "overall": 45,
+        "total": 52,
+        "love": 42,
+        "study": 43,
+        "money": 48,
+        "health": 51
       }
     },
     {
       "rank": 12,
-      "sign_jp": "しし座",
-      "sign_ko": "사자자리",
-      "message_jp": "孤独を感じて落ち込むかも 単なる思い過ごしかもしれないよ カフェに行って心を落ち着かせて お気に入りの写真を飾る",
+      "sign_jp": "おひつじ座",
+      "sign_ko": "양자리",
+      "message_jp": "恋の波乱が起こるかも 不満があっても一度落ち着いて ひと呼吸置いてから話をするように から揚げを食べる",
       "message_ko": null,
       "scores": {
-        "overall": 49,
-        "total": 55,
-        "love": 56,
-        "study": 48,
-        "money": 49,
-        "health": 46
+        "overall": 46,
+        "total": 41,
+        "love": 52,
+        "study": 40,
+        "money": 47,
+        "health": 51
       }
     }
   ]

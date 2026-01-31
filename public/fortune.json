@@ -1,7 +1,7 @@
 {
   "source": "asahi_ohaasa",
-  "date_kst": "2026-01-31",
-  "updated_at_kst": "2026-01-31T05:04:17.421408+09:00",
+  "date_kst": "2026-02-01",
+  "updated_at_kst": "2026-02-01T05:03:07.633823+09:00",
   "status": "ok",
   "error_message": null,
   "rankings": [
@@ -12,12 +12,12 @@
       "message_jp": "目標に向かって前進できる時 今後の方向性が見えてくるよ 覚悟を決めて取り組んで 薬指でスマホを操作する",
       "message_ko": null,
       "scores": {
-        "overall": 98,
-        "total": 98,
+        "overall": 96,
+        "total": 93,
         "love": 100,
-        "study": 97,
-        "money": 100,
-        "health": 100
+        "study": 94,
+        "money": 89,
+        "health": 93
       }
     },
     {
@@ -28,11 +28,11 @@
       "message_ko": null,
       "scores": {
         "overall": 93,
-        "total": 99,
-        "love": 86,
-        "study": 95,
-        "money": 98,
-        "health": 96
+        "total": 97,
+        "love": 85,
+        "study": 99,
+        "money": 100,
+        "health": 88
       }
     },
     {
@@ -42,12 +42,12 @@
       "message_jp": "好きな人との関係に進展が…♥ 熱い気持ちを届けてね ボランティアに参加する",
       "message_ko": null,
       "scores": {
-        "overall": 88,
-        "total": 94,
-        "love": 87,
-        "study": 89,
-        "money": 93,
-        "health": 88
+        "overall": 86,
+        "total": 88,
+        "love": 79,
+        "study": 93,
+        "money": 94,
+        "health": 94
       }
     },
     {
@@ -57,12 +57,12 @@
       "message_jp": "幸せな一日になる予感 気の合う仲間と過ごすと◎ 窓の開け閉めをする",
       "message_ko": null,
       "scores": {
-        "overall": 80,
-        "total": 85,
-        "love": 80,
-        "study": 73,
+        "overall": 82,
+        "total": 78,
+        "love": 77,
+        "study": 84,
         "money": 81,
-        "health": 85
+        "health": 77
       }
     },
     {
@@ -72,12 +72,12 @@
       "message_jp": "ちょっとした節約が効果的 おやつ代を見直すといいかも 小説を読む",
       "message_ko": null,
       "scores": {
-        "overall": 77,
-        "total": 73,
-        "love": 77,
-        "study": 71,
-        "money": 81,
-        "health": 77
+        "overall": 76,
+        "total": 70,
+        "love": 78,
+        "study": 78,
+        "money": 82,
+        "health": 71
       }
     },
     {
@@ -87,12 +87,12 @@
       "message_jp": "意外な人からアプローチされそう まずは相手をよく知る事が大切 マッサージをする",
       "message_ko": null,
       "scores": {
-        "overall": 71,
-        "total": 67,
-        "love": 76,
-        "study": 74,
-        "money": 75,
-        "health": 70
+        "overall": 72,
+        "total": 71,
+        "love": 78,
+        "study": 79,
+        "money": 77,
+        "health": 75
       }
     },
     {
@@ -102,12 +102,12 @@
       "message_jp": "感謝の思いが芽生える日 電話やメールで伝えるとＧＯＯＤ ダンスやバレエを鑑賞する",
       "message_ko": null,
       "scores": {
-        "overall": 66,
-        "total": 72,
-        "love": 65,
-        "study": 72,
-        "money": 74,
-        "health": 62
+        "overall": 69,
+        "total": 65,
+        "love": 72,
+        "study": 65,
+        "money": 68,
+        "health": 68
       }
     },
     {
@@ -118,11 +118,11 @@
       "message_ko": null,
       "scores": {
         "overall": 62,
-        "total": 66,
-        "love": 68,
-        "study": 67,
-        "money": 55,
-        "health": 59
+        "total": 54,
+        "love": 70,
+        "study": 54,
+        "money": 61,
+        "health": 67
       }
     },
     {
@@ -132,12 +132,12 @@
       "message_jp": "頑張りすぎてクタクタに 肩の力を抜いてリラックスを こげ茶色のアイテムを使う",
       "message_ko": null,
       "scores": {
-        "overall": 55,
-        "total": 55,
-        "love": 58,
-        "study": 47,
-        "money": 57,
-        "health": 53
+        "overall": 59,
+        "total": 57,
+        "love": 62,
+        "study": 60,
+        "money": 63,
+        "health": 61
       }
     },
     {
@@ -147,12 +147,12 @@
       "message_jp": "ネガティブ思考になるかも ささいな事を気にするのはＮＧ 収納ラックを購入する",
       "message_ko": null,
       "scores": {
-        "overall": 51,
-        "total": 50,
-        "love": 52,
-        "study": 48,
-        "money": 53,
-        "health": 52
+        "overall": 50,
+        "total": 51,
+        "love": 58,
+        "study": 53,
+        "money": 51,
+        "health": 49
       }
     },
     {
@@ -164,10 +164,10 @@
       "scores": {
         "overall": 49,
         "total": 55,
-        "love": 42,
-        "study": 42,
-        "money": 56,
-        "health": 41
+        "love": 47,
+        "study": 43,
+        "money": 49,
+        "health": 45
       }
     },
     {
@@ -177,12 +177,12 @@
       "message_jp": "お金のトラブルに注意が必要 周りを頼りすぎないように 自力で解決策を考えて ウォーキングをする",
       "message_ko": null,
       "scores": {
-        "overall": 42,
-        "total": 50,
-        "love": 35,
-        "study": 35,
-        "money": 36,
-        "health": 43
+        "overall": 41,
+        "total": 46,
+        "love": 46,
+        "study": 40,
+        "money": 35,
+        "health": 46
       }
     }
   ]

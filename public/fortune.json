@@ -1,7 +1,7 @@
 {
   "source": "asahi_ohaasa",
-  "date_kst": "2026-02-07",
-  "updated_at_kst": "2026-02-07T05:05:47.091538+09:00",
+  "date_kst": "2026-02-08",
+  "updated_at_kst": "2026-02-08T05:03:14.277620+09:00",
   "status": "ok",
   "error_message": null,
   "rankings": [
@@ -12,12 +12,12 @@
       "message_jp": "うれしいニュースが舞い込む日 皆と喜びを分かち合ってね 幸せな時間を過ごせるよ 財布を部屋の北西に置く",
       "message_ko": null,
       "scores": {
-        "overall": 96,
-        "total": 95,
-        "love": 91,
-        "study": 100,
+        "overall": 98,
+        "total": 100,
+        "love": 100,
+        "study": 96,
         "money": 100,
-        "health": 89
+        "health": 100
       }
     },
     {
@@ -27,12 +27,12 @@
       "message_jp": "思いがけない臨時収入が…！ 依頼は快く引き受けると◎ ピンク色の服を着る",
       "message_ko": null,
       "scores": {
-        "overall": 93,
-        "total": 100,
-        "love": 89,
-        "study": 97,
+        "overall": 90,
+        "total": 92,
+        "love": 82,
+        "study": 93,
         "money": 86,
-        "health": 98
+        "health": 93
       }
     },
     {
@@ -42,12 +42,12 @@
       "message_jp": "新しい世界が広がる予感 未経験の分野に注目を バスタオルを使う",
       "message_ko": null,
       "scores": {
-        "overall": 89,
-        "total": 93,
-        "love": 84,
-        "study": 85,
-        "money": 86,
-        "health": 84
+        "overall": 85,
+        "total": 85,
+        "love": 78,
+        "study": 82,
+        "money": 77,
+        "health": 79
       }
     },
     {
@@ -57,12 +57,12 @@
       "message_jp": "共同作業がうまくいく時 コミュニケーションを大事にしよう ささみを食べる",
       "message_ko": null,
       "scores": {
-        "overall": 80,
-        "total": 87,
-        "love": 79,
-        "study": 82,
+        "overall": 83,
+        "total": 90,
+        "love": 76,
+        "study": 80,
         "money": 77,
-        "health": 77
+        "health": 90
       }
     },
     {
@@ -72,12 +72,12 @@
       "message_jp": "華やかな雰囲気でモテモテに♥ 魅力を最大限にいかしてね ティーポットでお茶を入れる",
       "message_ko": null,
       "scores": {
-        "overall": 76,
-        "total": 71,
-        "love": 73,
-        "study": 72,
-        "money": 77,
-        "health": 71
+        "overall": 77,
+        "total": 73,
+        "love": 70,
+        "study": 85,
+        "money": 72,
+        "health": 79
       }
     },
     {
@@ -88,11 +88,11 @@
       "message_ko": null,
       "scores": {
         "overall": 71,
-        "total": 73,
-        "love": 65,
-        "study": 73,
-        "money": 75,
-        "health": 64
+        "total": 78,
+        "love": 78,
+        "study": 69,
+        "money": 71,
+        "health": 74
       }
     },
     {
@@ -102,12 +102,12 @@
       "message_jp": "ヤル気がフツフツわいてくるよ 理想の姿をイメージするとＧＯＯＤ キャンドルの火を見つめる",
       "message_ko": null,
       "scores": {
-        "overall": 65,
-        "total": 61,
-        "love": 64,
-        "study": 73,
-        "money": 70,
-        "health": 61
+        "overall": 67,
+        "total": 59,
+        "love": 59,
+        "study": 68,
+        "money": 62,
+        "health": 70
       }
     },
     {
@@ -117,12 +117,12 @@
       "message_jp": "うわさ話に惑わされないよう注意 客観的な判断を大切に ぬるま湯で洗顔する",
       "message_ko": null,
       "scores": {
-        "overall": 62,
-        "total": 60,
+        "overall": 63,
+        "total": 59,
         "love": 60,
-        "study": 70,
-        "money": 67,
-        "health": 68
+        "study": 60,
+        "money": 68,
+        "health": 64
       }
     },
     {
@@ -132,12 +132,12 @@
       "message_jp": "限界まで無理をするかも 友達に協力をお願いしてね 靴下を左足から履く",
       "message_ko": null,
       "scores": {
-        "overall": 57,
-        "total": 65,
+        "overall": 59,
+        "total": 67,
         "love": 62,
-        "study": 55,
-        "money": 49,
-        "health": 57
+        "study": 65,
+        "money": 59,
+        "health": 55
       }
     },
     {
@@ -147,12 +147,12 @@
       "message_jp": "お金の出入りが激しくなりそう 大金は持ち歩かないで 美術書を読む",
       "message_ko": null,
       "scores": {
-        "overall": 52,
-        "total": 51,
-        "love": 45,
-        "study": 54,
-        "money": 54,
-        "health": 56
+        "overall": 50,
+        "total": 44,
+        "love": 53,
+        "study": 47,
+        "money": 56,
+        "health": 42
       }
     },
     {
@@ -163,11 +163,11 @@
       "message_ko": null,
       "scores": {
         "overall": 47,
-        "total": 41,
-        "love": 41,
-        "study": 54,
-        "money": 51,
-        "health": 43
+        "total": 55,
+        "love": 46,
+        "study": 40,
+        "money": 43,
+        "health": 53
       }
     },
     {
@@ -177,12 +177,12 @@
       "message_jp": "忙しくて余裕がなくなるかも きょうは言動に気をつけて 周囲への配慮を忘れないで ベージュの小物を使う",
       "message_ko": null,
       "scores": {
-        "overall": 45,
-        "total": 44,
-        "love": 39,
-        "study": 52,
+        "overall": 49,
+        "total": 54,
+        "love": 51,
+        "study": 53,
         "money": 45,
-        "health": 37
+        "health": 48
       }
     }
   ]

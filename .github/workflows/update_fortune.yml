@@ -5,6 +5,10 @@ on:
     - cron: "0 20 * * *" # KST 05:00 (UTC 20:00)
   workflow_dispatch:
 
+concurrency:
+  group: update-fortune
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-22.04
@@ -49,10 +53,9 @@ jobs:
           git config user.name "ohaasa-bot"
           git config user.email "ohaasa-bot@users.noreply.github.com"
 
+          # 원격에 먼저 커밋이 들어온 경우 대비 (autostash로 변경분 임시 보관)
+          git pull --rebase --autostash origin main
+
           git add public/fortune.json
           git commit -m "chore: update fortune data"
-
-          # 레이스 컨디션 대비: 커밋 후 rebase로 최신 반영
-          git pull --rebase origin main
-
-          git push
+          git push origin main

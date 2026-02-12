@@ -1,472 +1,570 @@
-# scripts/fetch_ohaasa.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import re
 import json
 import time
 import hashlib
-import datetime
+import traceback
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import sync_playwright
 
-# -----------------------------
+
+# =========================
 # Config
-# -----------------------------
-OHAASA_URL = "https://www.asahi.com/uranai/12seiza/"  # (필요하면 기존에 쓰던 URL로 되돌려도 됨)
-OUT_PATH = "public/fortune.json"
+# =========================
+SOURCE_URL = "https://www.asahi.co.jp/ohaasa/week/horoscope/"
+OUT_PATH = os.path.join("public", "fortune.json")
 
-CACHE_DIR = "scripts/cache"
-OPENAI_CACHE_PATH = os.path.join(CACHE_DIR, "openai_cache.json")
+CACHE_DIR = os.path.join("scripts", "cache")
+CACHE_PATH = os.path.join(CACHE_DIR, "openai_cache.json")
 
-# env
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini").strip()
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+OPENAI_ENDPOINT = "https://api.openai.com/v1/responses"
+OPENAI_MODEL_DEFAULT = "gpt-5-mini"
 
-# -----------------------------
+# KST (UTC+9)
+KST = timezone(timedelta(hours=9))
+
+
+# =========================
 # Zodiac mappings
-# (site에서 긁히는 표기가 조금 달라도 매칭되게 느슨하게 처리)
-# -----------------------------
-SIGN_ORDER = [
-    ("aries", "おひつじ座", "양자리"),
-    ("taurus", "おうし座", "황소자리"),
-    ("gemini", "ふたご座", "쌍둥이자리"),
-    ("cancer", "かに座", "게자리"),
-    ("leo", "しし座", "사자자리"),
-    ("virgo", "おとめ座", "처녀자리"),
-    ("libra", "てんびん座", "천칭자리"),
-    ("scorpio", "さそり座", "전갈자리"),
-    ("sagittarius", "いて座", "사수자리"),
-    ("capricorn", "やぎ座", "염소자리"),
-    ("aquarius", "みずがめ座", "물병자리"),
-    ("pisces", "うお座", "물고기자리"),
+# =========================
+SIGN_KEYS = [
+    "aries", "taurus", "gemini", "cancer", "leo", "virgo",
+    "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"
 ]
 
-JP_TO_KEY = {jp: key for (key, jp, ko) in SIGN_ORDER}
-KEY_TO_KO = {key: ko for (key, jp, ko) in SIGN_ORDER}
+JP_TO_KEY = {
+    "おひつじ座": "aries",
+    "おうし座": "taurus",
+    "ふたご座": "gemini",
+    "かに座": "cancer",
+    "しし座": "leo",
+    "おとめ座": "virgo",
+    "てんびん座": "libra",
+    "さそり座": "scorpio",
+    "いて座": "sagittarius",
+    "やぎ座": "capricorn",
+    "みずがめ座": "aquarius",
+    "うお座": "pisces",
+    # 간혹 한자 표기 섞이면 대비
+    "牡羊座": "aries",
+    "牡牛座": "taurus",
+    "双子座": "gemini",
+    "蟹座": "cancer",
+    "獅子座": "leo",
+    "乙女座": "virgo",
+    "天秤座": "libra",
+    "蠍座": "scorpio",
+    "射手座": "sagittarius",
+    "山羊座": "capricorn",
+    "水瓶座": "aquarius",
+    "魚座": "pisces",
+}
 
-# -----------------------------
+KEY_TO_KO = {
+    "aries": "양자리",
+    "taurus": "황소자리",
+    "gemini": "쌍둥이자리",
+    "cancer": "게자리",
+    "leo": "사자자리",
+    "virgo": "처녀자리",
+    "libra": "천칭자리",
+    "scorpio": "전갈자리",
+    "sagittarius": "사수자리",
+    "capricorn": "염소자리",
+    "aquarius": "물병자리",
+    "pisces": "물고기자리",
+}
+
+
+# =========================
 # Helpers
-# -----------------------------
-def now_kst() -> datetime.datetime:
-    # KST = UTC+9
-    return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone(
-        datetime.timezone(datetime.timedelta(hours=9))
-    )
+# =========================
+def now_kst_iso() -> str:
+    return datetime.now(KST).isoformat()
 
-def kst_date_str() -> str:
-    return now_kst().date().isoformat()
+
+def today_kst_ymd() -> str:
+    return datetime.now(KST).strftime("%Y-%m-%d")
+
 
 def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
-def sha1(text: str) -> str:
-    return hashlib.sha1(text.encode("utf-8")).hexdigest()
 
-def safe_write_json(path: str, data: Any) -> None:
+def read_json_file(path: str) -> Optional[dict]:
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def write_json_file(path: str, data: dict) -> None:
+    ensure_dir(os.path.dirname(path))
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     os.replace(tmp, path)
 
-def load_json(path: str) -> Any:
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
-def normalize_sign_jp(raw: str) -> str:
-    # 공백/줄바꿈 제거
-    s = re.sub(r"\s+", "", raw or "")
-    return s
+def stable_hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
-def sign_key_from_jp(sign_jp: str) -> Optional[str]:
-    s = normalize_sign_jp(sign_jp)
-    # 완전 일치 우선
-    if s in JP_TO_KEY:
-        return JP_TO_KEY[s]
-    # 부분 매칭(표기 흔들릴 때 대비)
-    for (key, jp, _ko) in SIGN_ORDER:
-        if jp in s or s in jp:
-            return key
-    return None
 
-def clamp_int(v: Any, lo: int, hi: int, default: int) -> int:
+def clamp_int(x: Any, lo: int, hi: int, default: int) -> int:
     try:
-        n = int(v)
-        return max(lo, min(hi, n))
+        v = int(x)
+        return max(lo, min(hi, v))
     except Exception:
         return default
 
-def normalize_hex(color_hex: str, fallback: str = "#3FA7D6") -> str:
-    if not isinstance(color_hex, str):
+
+def normalize_hex_color(x: Any, fallback: str = "#2F8F9D") -> str:
+    if not isinstance(x, str):
         return fallback
-    s = color_hex.strip()
-    if re.fullmatch(r"#[0-9A-Fa-f]{6}", s):
+    s = x.strip()
+    if re.fullmatch(r"#([0-9a-fA-F]{6})", s):
         return s.upper()
-    # "#RGB" 형태면 확장
-    m = re.fullmatch(r"#[0-9A-Fa-f]{3}", s)
-    if m:
-        r, g, b = s[1], s[2], s[3]
-        return f"#{r}{r}{g}{g}{b}{b}".upper()
+    if re.fullmatch(r"([0-9a-fA-F]{6})", s):
+        return ("#" + s).upper()
     return fallback
 
-# -----------------------------
-# Scraping (과거 안정 버전 스타일로 최대한 유지)
-# -----------------------------
+
+def sanitize_text(s: Any, fallback: str = "") -> str:
+    if s is None:
+        return fallback
+    if not isinstance(s, str):
+        try:
+            s = str(s)
+        except Exception:
+            return fallback
+    return s.strip()
+
+
+# =========================
+# Scraping
+# =========================
 def scrape_ohaasa_rankings() -> List[Dict[str, Any]]:
     """
-    리스트 루트: ul.oa_horoscope_list > li
-    랭크: .horo_rank
-    별자리명: .horo_name
-    멘트: .horo_txt
+    Scrape ranking list:
+      - root: ul.oa_horoscope_list > li
+      - rank: .horo_rank
+      - sign: .horo_name
+      - message: .horo_txt
+
+    Returns list of items with:
+      rank(int), sign_jp(str), message_jp(str), sign_key(str), sign_ko(str)
     """
-    results: List[Dict[str, Any]] = []
+    items: List[Dict[str, Any]] = []
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            locale="ja-JP",
-            user_agent=(
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            viewport={"width": 1280, "height": 720},
-        )
-        # 일부 사이트는 언어/헤더 민감
-        context.set_extra_http_headers(
-            {
-                "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.7,en;q=0.6",
-            }
-        )
+        page = browser.new_page()
 
-        page = context.new_page()
-        page.set_default_timeout(45000)
+        page.goto(SOURCE_URL, wait_until="domcontentloaded", timeout=60000)
 
-        # networkidle은 종종 끝까지 안 떨어져서 실패 원인이 됨 → domcontentloaded + selector 대기
-        page.goto(OHAASA_URL, wait_until="domcontentloaded")
+        # 네트워크/렌더 지연 대비
+        page.wait_for_selector("ul.oa_horoscope_list > li", timeout=60000)
 
-        # 리스트가 뜰 때까지 대기
-        page.wait_for_selector("ul.oa_horoscope_list > li", timeout=45000)
-
-        items = page.query_selector_all("ul.oa_horoscope_list > li")
-        for li in items:
+        lis = page.query_selector_all("ul.oa_horoscope_list > li")
+        for idx, li in enumerate(lis):
             rank_el = li.query_selector(".horo_rank")
             name_el = li.query_selector(".horo_name")
             txt_el = li.query_selector(".horo_txt")
 
-            rank_txt = (rank_el.inner_text().strip() if rank_el else "").strip()
-            sign_jp = (name_el.inner_text().strip() if name_el else "").strip()
-            message_jp = (txt_el.inner_text().strip() if txt_el else "").strip()
+            rank_txt = sanitize_text(rank_el.inner_text() if rank_el else "")
+            sign_jp = sanitize_text(name_el.inner_text() if name_el else "")
+            message_jp = sanitize_text(txt_el.inner_text() if txt_el else "")
 
-            # rank 파싱(예: "1位" 같은 경우 숫자만)
-            rank_num = None
+            # rank parse (예: "1位" "1" 등)
             m = re.search(r"(\d+)", rank_txt)
-            if m:
-                rank_num = int(m.group(1))
+            rank = int(m.group(1)) if m else (idx + 1)
 
-            if not sign_jp or not message_jp or rank_num is None:
-                continue
+            sign_key = JP_TO_KEY.get(sign_jp)
+            if not sign_key:
+                # 혹시 순서가 12개 고정이라면 인덱스로 fallback
+                if 0 <= idx < len(SIGN_KEYS):
+                    sign_key = SIGN_KEYS[idx]
+                else:
+                    sign_key = "unknown"
 
-            key = sign_key_from_jp(sign_jp)
-            if not key:
-                # 못 맞추면 그래도 저장(디버깅용)
-                key = "unknown"
+            sign_ko = KEY_TO_KO.get(sign_key, "")
 
-            results.append(
-                {
-                    "rank": rank_num,
-                    "sign_key": key,
-                    "sign_jp": sign_jp,
-                    "message_jp": message_jp,
-                }
-            )
+            # message_jp가 비어있으면 스킵 (하지만 전체가 비면 실패 처리)
+            items.append({
+                "rank": rank,
+                "sign_key": sign_key,
+                "sign_jp": sign_jp,
+                "sign_ko": sign_ko,
+                "message_jp": message_jp,
+            })
 
-        context.close()
         browser.close()
 
-    # rank 기준 정렬
-    results.sort(key=lambda x: x.get("rank", 999))
-    return results
+    # rank 기준 정렬 (보통 1~12)
+    items.sort(key=lambda x: x.get("rank", 999))
+    return items
 
-def scrape_scores_for_sign(_page, _sign_key: str) -> Dict[str, int]:
-    # TODO: 상세 페이지 점수 크롤링 붙이기 전까지는 placeholder 유지
-    return {"total": 50, "love": 50, "study": 50, "money": 50, "health": 50}
 
-# -----------------------------
+# =========================
 # OpenAI (Responses API)
-# -----------------------------
-def build_response_schema() -> Dict[str, Any]:
-    """
-    strict JSON schema:
-    - 각 object 레벨에서 required는 properties의 모든 키를 포함해야 함.
-    - 불필요한 optional 필드는 넣지 않는 게 안정적.
-    """
-    card_item = {
-        "type": "object",
-        "additionalProperties": False,
-        "properties": {
-            "category": {"type": "string", "enum": ["총운", "연애운", "학업운", "금전운", "건강운"]},
-            "tone": {"type": "string", "enum": ["상승", "안정", "하락"]},
-            "score": {"type": "integer", "minimum": 0, "maximum": 100},
-            "comment": {"type": "string"},
-            "tip": {"type": "string"},
-            "warning": {"type": "string"},
-        },
-        "required": ["category", "tone", "score", "comment", "tip", "warning"],
-    }
-
-    schema = {
-        "type": "object",
-        "additionalProperties": False,
-        "properties": {
-            "message_ko": {"type": "string"},
-            "ai": {
-                "type": "object",
-                "additionalProperties": False,
-                "properties": {
-                    "summary": {
+# =========================
+AI_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["message_ko", "ai"],
+    "properties": {
+        "message_ko": {"type": "string"},
+        "ai": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["summary", "cards", "lucky_points"],
+            "properties": {
+                "summary": {"type": "string"},
+                "cards": {
+                    "type": "array",
+                    "minItems": 5,
+                    "maxItems": 5,
+                    "items": {
                         "type": "object",
                         "additionalProperties": False,
+                        "required": ["category", "score", "comment", "tip", "warning"],
                         "properties": {
-                            "headline": {"type": "string"},
-                            "body": {"type": "string"},
+                            "category": {"type": "string"},
+                            "score": {"type": "integer"},
+                            "comment": {"type": "string"},
                             "tip": {"type": "string"},
                             "warning": {"type": "string"},
                         },
-                        "required": ["headline", "body", "tip", "warning"],
-                    },
-                    "cards": {
-                        "type": "array",
-                        "minItems": 5,
-                        "maxItems": 5,
-                        "items": card_item,
-                    },
-                    "lucky_points": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "color_name": {"type": "string"},
-                            "color_hex": {"type": "string", "pattern": r"^#[0-9A-Fa-f]{6}$"},
-                            "number": {"type": "integer", "minimum": 1, "maximum": 9},
-                            "item": {"type": "string"},
-                            "keyword": {"type": "string"},
-                        },
-                        "required": ["color_name", "color_hex", "number", "item", "keyword"],
                     },
                 },
-                "required": ["summary", "cards", "lucky_points"],
+                "lucky_points": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["color_name", "color_hex", "number", "item", "keyword"],
+                    "properties": {
+                        "color_name": {"type": "string"},
+                        "color_hex": {"type": "string"},
+                        "number": {"type": "integer"},
+                        "item": {"type": "string"},
+                        "keyword": {"type": "string"},
+                    },
+                },
             },
         },
-        "required": ["message_ko", "ai"],
-    }
-    return schema
+    },
+}
 
-def extract_output_text(resp_json: Dict[str, Any]) -> str:
-    # Responses API output 파싱(유연하게)
-    if isinstance(resp_json, dict):
-        if "output_text" in resp_json and isinstance(resp_json["output_text"], str):
-            return resp_json["output_text"]
-        out = resp_json.get("output")
-        if isinstance(out, list):
-            for item in out:
-                content = item.get("content") if isinstance(item, dict) else None
-                if isinstance(content, list):
-                    for c in content:
-                        if isinstance(c, dict):
-                            # 보통 {"type":"output_text","text":"..."} 형태
-                            if c.get("type") in ("output_text", "text") and isinstance(c.get("text"), str):
-                                return c["text"]
-    return ""
 
-def openai_generate_bundle(
-    *,
+SYSTEM_PROMPT = """너는 한국어 운세 콘텐츠 편집자이자 카피라이터다.
+사용자가 볼 화면은 '오하아사 오늘의 운세'이며, 입력 데이터는 일본어 원문 운세 멘트(message_jp)와 점수(scores)다.
+
+목표:
+1) message_jp를 자연스러운 한국어(message_ko)로 번역한다. (의역 가능, 과장 금지)
+2) ai.summary: 오늘 전체 톤을 1~2문장으로 요약한다.
+3) ai.cards: 5개 카드를 생성한다. 각 카드는 category, score, comment, tip, warning을 포함한다.
+   - category는 다음 5개 중 하나로 맞춘다: "총운", "연애운", "학업운", "금전운", "건강운"
+   - score는 0~100 정수, 입력 scores의 해당 값을 우선 반영하되, 문맥이 안 맞으면 ±10 범위에서 조정 가능.
+   - comment는 1~2문장, tip/warning은 짧고 실행 가능하게.
+   - 금지: 혐오/차별/폭력 조장, 의료·법률 단정, 과도한 불안 조성, 성적 노골 표현.
+4) ai.lucky_points: 오늘의 행운 포인트 5개를 만든다.
+   - color_hex는 반드시 #RRGGBB 형식
+   - number는 1~9
+   - color_name/item/keyword는 짧고 구체적으로.
+
+출력은 반드시 JSON 하나만. 다른 텍스트를 절대 출력하지 마라.
+"""
+
+
+def build_user_prompt(
     date_kst: str,
     sign_key: str,
     sign_ko: str,
+    sign_jp: str,
     message_jp: str,
     scores: Dict[str, int],
-    zodiac_color_hex: str = "#3FA7D6",
+) -> str:
+    return (
+        f"date_kst: {date_kst}\n"
+        f"sign_key: {sign_key}\n"
+        f"sign_ko: {sign_ko}\n"
+        f"sign_jp: {sign_jp}\n"
+        f"scores: {json.dumps(scores, ensure_ascii=False)}\n"
+        f"message_jp: {message_jp}\n"
+    )
+
+
+def extract_output_text(resp_json: Dict[str, Any]) -> str:
+    # Responses API는 환경/버전에 따라 output_text가 있거나 output 배열에 들어있을 수 있음
+    if isinstance(resp_json.get("output_text"), str) and resp_json["output_text"].strip():
+        return resp_json["output_text"].strip()
+
+    out = resp_json.get("output", [])
+    if isinstance(out, list):
+        for item in out:
+            content = item.get("content", [])
+            if isinstance(content, list):
+                for c in content:
+                    if c.get("type") in ("output_text", "text") and isinstance(c.get("text"), str):
+                        t = c["text"].strip()
+                        if t:
+                            return t
+    return ""
+
+
+def openai_generate_bundle(
+    api_key: str,
+    model: str,
+    date_kst: str,
+    sign_key: str,
+    sign_ko: str,
+    sign_jp: str,
+    message_jp: str,
+    scores: Dict[str, int],
+    retry: int = 1,
 ) -> Dict[str, Any]:
-    if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not set")
-
-    schema = build_response_schema()
-
-    system = (
-        "너는 한국어 운세 콘텐츠를 만드는 전문 에디터다.\n"
-        "- 사용자가 보는 UI는 카드형(총운/연애운/학업운/금전운/건강운) 5개다.\n"
-        "- 번역: message_jp를 자연스러운 한국어로 번역하되 과장하지 말고 간결하게.\n"
-        "- 카드: 각 카드 comment는 1~2문장, tip/warning은 각 1문장.\n"
-        "- 표현 금지: 선정적/차별적/혐오/폭력 조장.\n"
-        "- 점수는 입력 scores를 참고하되 0~100 정수.\n"
-        "- lucky_points는 모바일 UI에 들어갈 짧은 단어로.\n"
-        "- 반드시 JSON만 출력.\n"
-    )
-
-    user = (
-        f"[KST 날짜] {date_kst}\n"
-        f"[서양 별자리] {sign_ko} ({sign_key})\n"
-        f"[별자리 고유색 HEX] {zodiac_color_hex}\n"
-        f"[오하아사 원문 message_jp]\n{message_jp}\n\n"
-        f"[점수(scores)] {json.dumps(scores, ensure_ascii=False)}\n\n"
-        "요구 결과(JSON):\n"
-        "- message_ko: 원문을 자연스러운 한국어로 번역\n"
-        "- ai.summary: headline/body/tip/warning\n"
-        "- ai.cards: 5개(총운/연애운/학업운/금전운/건강운) category, tone(상승/안정/하락), score, comment, tip, warning\n"
-        "- ai.lucky_points: color_name,color_hex,number(1~9),item,keyword\n"
-    )
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
 
     payload = {
-        "model": OPENAI_MODEL,
+        "model": model,
         "input": [
-            {"role": "system", "content": [{"type": "text", "text": system}]},
-            {"role": "user", "content": [{"type": "text", "text": user}]},
+            {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": build_user_prompt(
+                            date_kst=date_kst,
+                            sign_key=sign_key,
+                            sign_ko=sign_ko,
+                            sign_jp=sign_jp,
+                            message_jp=message_jp,
+                            scores=scores,
+                        ),
+                    }
+                ],
+            },
         ],
-        # 핵심: text.format.name 필수 + strict schema
+        # 여기서 name 누락하면 "Missing required parameter: text.format.name" 뜸
         "text": {
             "format": {
                 "type": "json_schema",
                 "name": "ohaasa_ai_bundle",
-                "schema": schema,
+                "schema": AI_SCHEMA,
                 "strict": True,
             }
         },
+        "temperature": 0.7,
     }
 
-    url = f"{OPENAI_BASE_URL}/responses"
-    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    last_err = None
+    for attempt in range(retry + 1):
+        try:
+            r = requests.post(OPENAI_ENDPOINT, headers=headers, json=payload, timeout=90)
+            if r.status_code >= 400:
+                raise RuntimeError(f"OpenAI HTTP {r.status_code}: {r.text}")
 
-    r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-    if r.status_code >= 400:
-        raise RuntimeError(f"OpenAI HTTP {r.status_code}: {r.text[:4000]}")
+            resp_json = r.json()
+            text_out = extract_output_text(resp_json)
+            if not text_out:
+                raise RuntimeError(f"OpenAI empty output: {json.dumps(resp_json)[:500]}")
 
-    resp_json = r.json()
-    out_text = extract_output_text(resp_json)
-    if not out_text:
-        raise RuntimeError("OpenAI response has no output text")
+            data = json.loads(text_out)
+            return data
+        except Exception as e:
+            last_err = e
+            if attempt < retry:
+                time.sleep(1.2)
+                continue
+            raise last_err
 
-    try:
-        data = json.loads(out_text)
-    except Exception:
-        # JSON 파싱 실패 시 1회 재시도(응답에 잡텍스트 섞일 때 대비)
-        r2 = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-        if r2.status_code >= 400:
-            raise RuntimeError(f"OpenAI retry HTTP {r2.status_code}: {r2.text[:4000]}")
-        resp2 = r2.json()
-        out2 = extract_output_text(resp2)
-        data = json.loads(out2)
 
-    # --- post-normalize (최소 보정) ---
+def validate_and_fix_ai_bundle(
+    bundle: Dict[str, Any],
+    scores: Dict[str, int],
+) -> Dict[str, Any]:
+    # 기본 구조 확보
+    msg_ko = sanitize_text(bundle.get("message_ko"), "")
+    ai = bundle.get("ai") if isinstance(bundle.get("ai"), dict) else {}
+
+    summary = sanitize_text(ai.get("summary"), "")
+    cards = ai.get("cards") if isinstance(ai.get("cards"), list) else []
+    lucky = ai.get("lucky_points") if isinstance(ai.get("lucky_points"), dict) else {}
+
+    # cards: 5개 고정 보정
+    desired_categories = ["총운", "연애운", "학업운", "금전운", "건강운"]
+    score_by_cat = {
+        "총운": scores.get("total", 50),
+        "연애운": scores.get("love", 50),
+        "학업운": scores.get("study", 50),
+        "금전운": scores.get("money", 50),
+        "건강운": scores.get("health", 50),
+    }
+
+    normalized_cards: List[Dict[str, Any]] = []
+    # category 기준으로 재정렬/매칭
+    for cat in desired_categories:
+        found = None
+        for c in cards:
+            if isinstance(c, dict) and sanitize_text(c.get("category")) == cat:
+                found = c
+                break
+        if not found:
+            found = {}
+
+        normalized_cards.append({
+            "category": cat,
+            "score": clamp_int(found.get("score", score_by_cat[cat]), 0, 100, score_by_cat[cat]),
+            "comment": sanitize_text(found.get("comment"), "오늘은 흐름을 천천히 확인해보세요."),
+            "tip": sanitize_text(found.get("tip"), "작은 목표 하나만 먼저 끝내보세요."),
+            "warning": sanitize_text(found.get("warning"), "무리한 확신은 피하세요."),
+        })
+
     # lucky_points 보정
-    lp = data["ai"]["lucky_points"]
-    lp["color_hex"] = normalize_hex(lp.get("color_hex", "#3FA7D6"))
-    lp["number"] = clamp_int(lp.get("number", 7), 1, 9, 7)
+    lucky_fixed = {
+        "color_name": sanitize_text(lucky.get("color_name"), "딥 틸"),
+        "color_hex": normalize_hex_color(lucky.get("color_hex"), "#2F8F9D"),
+        "number": clamp_int(lucky.get("number"), 1, 9, 7),
+        "item": sanitize_text(lucky.get("item"), "메모장"),
+        "keyword": sanitize_text(lucky.get("keyword"), "정리"),
+    }
 
-    # cards 5개 보정 + category 중복/누락 보정
-    cards = data["ai"]["cards"]
-    # 혹시 순서 꼬이면 category 기준 정렬
-    order = {"총운": 0, "연애운": 1, "학업운": 2, "금전운": 3, "건강운": 4}
-    cards.sort(key=lambda c: order.get(c.get("category", ""), 999))
-    data["ai"]["cards"] = cards[:5]
+    return {
+        "message_ko": msg_ko,
+        "ai": {
+            "summary": summary,
+            "cards": normalized_cards,
+            "lucky_points": lucky_fixed,
+        }
+    }
 
-    return data
 
-# -----------------------------
+# =========================
 # Cache
-# -----------------------------
+# =========================
 def load_cache() -> Dict[str, Any]:
-    ensure_dir(CACHE_DIR)
-    try:
-        return load_json(OPENAI_CACHE_PATH) or {}
-    except Exception:
-        return {}
+    data = read_json_file(CACHE_PATH)
+    if isinstance(data, dict):
+        return data
+    return {}
+
 
 def save_cache(cache: Dict[str, Any]) -> None:
     ensure_dir(CACHE_DIR)
-    safe_write_json(OPENAI_CACHE_PATH, cache)
+    write_json_file(CACHE_PATH, cache)
+
 
 def cache_key(date_kst: str, sign_key: str, message_jp: str) -> str:
-    return f"{date_kst}:{sign_key}:{sha1(message_jp)}"
+    h = stable_hash(message_jp)
+    return f"{date_kst}::{sign_key}::{h}"
 
-# -----------------------------
+
+# =========================
 # Main
-# -----------------------------
+# =========================
 def main() -> int:
-    date_kst = kst_date_str()
-    updated_at_kst = now_kst().isoformat()
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        print("[FATAL] OPENAI_API_KEY is not set.")
+        return 1
 
-    out: Dict[str, Any] = {
-        "source": "asahi_ohaasa",
-        "date_kst": date_kst,
-        "updated_at_kst": updated_at_kst,
-        "status": "ok",
-        "error_message": "",
-        "rankings": [],
-    }
+    model = os.environ.get("OPENAI_MODEL", OPENAI_MODEL_DEFAULT).strip() or OPENAI_MODEL_DEFAULT
+    date_kst = today_kst_ymd()
 
+    # 1) Scrape
     try:
-        rankings = scrape_ohaasa_rankings()
-        if not rankings:
-            raise RuntimeError("scrape returned empty rankings")
+        rankings_raw = scrape_ohaasa_rankings()
+    except Exception:
+        print("[FATAL] Scraping failed.")
+        traceback.print_exc()
+        return 1
 
-        cache = load_cache()
+    # 최소 안전장치: 12개 이상 확보 못 하면 덮어쓰기 금지
+    non_empty = [x for x in rankings_raw if sanitize_text(x.get("message_jp"))]
+    if len(rankings_raw) < 12 or len(non_empty) < 8:
+        print(f"[FATAL] Scrape incomplete. items={len(rankings_raw)} non_empty={len(non_empty)}")
+        return 1
 
-        enriched: List[Dict[str, Any]] = []
-        for row in rankings:
-            sign_key = row.get("sign_key", "unknown")
-            sign_jp = row.get("sign_jp", "")
-            message_jp = row.get("message_jp", "")
+    # 2) OpenAI enrich (cached)
+    cache = load_cache()
+    enriched: List[Dict[str, Any]] = []
 
-            sign_ko = KEY_TO_KO.get(sign_key, "알수없음")
+    for item in rankings_raw[:12]:
+        rank = item.get("rank")
+        sign_key = sanitize_text(item.get("sign_key"))
+        sign_jp = sanitize_text(item.get("sign_jp"))
+        sign_ko = sanitize_text(item.get("sign_ko")) or KEY_TO_KO.get(sign_key, "")
+        message_jp = sanitize_text(item.get("message_jp"))
 
-            # scores: 아직 placeholder이지만 스키마/프론트 호환 위해 유지
-            scores = {"total": 50, "love": 50, "study": 50, "money": 50, "health": 50}
+        # 점수는 아직 placeholder 유지 (실제 크롤링 붙이기 전까지)
+        scores = {"total": 50, "love": 50, "study": 50, "money": 50, "health": 50}
 
-            ck = cache_key(date_kst, sign_key, message_jp)
-            if ck in cache:
-                ai_pack = cache[ck]
-            else:
-                ai_pack = openai_generate_bundle(
+        ck = cache_key(date_kst, sign_key, message_jp)
+        if ck in cache:
+            ai_bundle = cache[ck]
+        else:
+            try:
+                raw_bundle = openai_generate_bundle(
+                    api_key=api_key,
+                    model=model,
                     date_kst=date_kst,
                     sign_key=sign_key,
                     sign_ko=sign_ko,
+                    sign_jp=sign_jp,
                     message_jp=message_jp,
                     scores=scores,
-                    zodiac_color_hex="#3FA7D6",
+                    retry=1,
                 )
-                cache[ck] = ai_pack
+                ai_bundle = validate_and_fix_ai_bundle(raw_bundle, scores=scores)
+                cache[ck] = ai_bundle
                 save_cache(cache)
-                # API 호출 과속 방지(살짝 텀)
-                time.sleep(0.2)
+            except Exception as e:
+                print(f"[ERROR] OpenAI failed for {sign_key} (rank {rank}): {e}")
+                traceback.print_exc()
+                return 1
 
-            enriched.append(
-                {
-                    "rank": row["rank"],
-                    "sign_key": sign_key,
-                    "sign_jp": sign_jp,
-                    "sign_ko": sign_ko,
-                    "message_jp": message_jp,               # 원문 유지
-                    "message_ko": ai_pack.get("message_ko", ""),  # 번역본
-                    "scores": scores,
-                    "ai": ai_pack.get("ai", {}),
-                }
-            )
+        enriched.append({
+            "rank": rank,
+            "sign_key": sign_key,
+            "sign_jp": sign_jp,
+            "sign_ko": sign_ko,
+            "scores": scores,
+            "message_jp": message_jp,
+            "message_ko": ai_bundle.get("message_ko", ""),
+            "ai": ai_bundle.get("ai", {}),
+        })
 
-        out["rankings"] = enriched
-
-    except Exception as e:
-        out["status"] = "error"
-        out["error_message"] = f"스크랩 실패: {str(e)}"
-
-        # 실패 시라도 최소한 깨진 파일 커밋되는 걸 막고 싶으면 여기서 exit(1)로 바꿔도 됨
-        # 지금은 네 요구가 "json 생성은 하되 정상데이터"가 목표라서,
-        # CI에서 실패를 감지하게끔 non-zero로 종료하는게 더 안전함.
-        safe_write_json(OUT_PATH, out)
+    # 3) Write fortune.json (atomic)
+    # 여기서도 12개 미만이면 쓰지 않음
+    if len(enriched) < 12:
+        print("[FATAL] Enriched rankings < 12. Will not overwrite fortune.json.")
         return 1
 
-    safe_write_json(OUT_PATH, out)
+    out = {
+        "source": "asahi_ohaasa",
+        "source_url": SOURCE_URL,
+        "date_kst": date_kst,
+        "updated_at_kst": now_kst_iso(),
+        "status": "ok",
+        "error_message": "",
+        "rankings": enriched,
+    }
+    write_json_file(OUT_PATH, out)
+    print(f"[OK] Wrote {OUT_PATH} with {len(enriched)} rankings. model={model}")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

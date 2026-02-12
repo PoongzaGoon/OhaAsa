@@ -53,7 +53,7 @@ jobs:
           git config user.name "ohaasa-bot"
           git config user.email "ohaasa-bot@users.noreply.github.com"
 
-          # ✅ 원격 변경 흡수 후 push (reject 방지)
+          # 원격 변경 흡수 후 push (reject 방지)
           git pull --rebase origin main
 
           git add public/fortune.json

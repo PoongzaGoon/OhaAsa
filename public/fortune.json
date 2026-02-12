@@ -1,9 +1,9 @@
 {
   "source": "asahi_ohaasa",
   "date_kst": "2026-02-12",
-  "updated_at_kst": "2026-02-12T05:09:10.023648+09:00",
-  "status": "ok",
-  "error_message": null,
+  "updated_at_kst": "2026-02-12T20:03:19.479587+09:00",
+  "status": "partial",
+  "error_message": "OPENAI_API_KEY missing",
   "rankings": [
     {
       "rank": 1,
@@ -18,7 +18,8 @@
         "study": 100,
         "money": 91,
         "health": 100
-      }
+      },
+      "ai": null
     },
     {
       "rank": 2,
@@ -33,7 +34,8 @@
         "study": 98,
         "money": 89,
         "health": 87
-      }
+      },
+      "ai": null
     },
     {
       "rank": 3,
@@ -48,7 +50,8 @@
         "study": 94,
         "money": 80,
         "health": 93
-      }
+      },
+      "ai": null
     },
     {
       "rank": 4,
@@ -63,7 +66,8 @@
         "study": 79,
         "money": 80,
         "health": 77
-      }
+      },
+      "ai": null
     },
     {
       "rank": 5,
@@ -78,7 +82,8 @@
         "study": 80,
         "money": 74,
         "health": 72
-      }
+      },
+      "ai": null
     },
     {
       "rank": 6,
@@ -93,7 +98,8 @@
         "study": 67,
         "money": 67,
         "health": 67
-      }
+      },
+      "ai": null
     },
     {
       "rank": 7,
@@ -108,7 +114,8 @@
         "study": 64,
         "money": 71,
         "health": 66
-      }
+      },
+      "ai": null
     },
     {
       "rank": 8,
@@ -123,7 +130,8 @@
         "study": 70,
         "money": 60,
         "health": 70
-      }
+      },
+      "ai": null
     },
     {
       "rank": 9,
@@ -138,7 +146,8 @@
         "study": 64,
         "money": 58,
         "health": 53
-      }
+      },
+      "ai": null
     },
     {
       "rank": 10,
@@ -153,7 +162,8 @@
         "study": 58,
         "money": 61,
         "health": 52
-      }
+      },
+      "ai": null
     },
     {
       "rank": 11,
@@ -168,7 +178,8 @@
         "study": 42,
         "money": 52,
         "health": 42
-      }
+      },
+      "ai": null
     },
     {
       "rank": 12,
@@ -183,7 +194,8 @@
         "study": 52,
         "money": 40,
         "health": 43
-      }
+      },
+      "ai": null
     }
   ]
 }

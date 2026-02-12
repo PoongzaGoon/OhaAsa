@@ -6,4 +6,4 @@ dist
 npm-debug.log*
 pnpm-lock.yaml
 yarn.lock
-scripts/cache/translate_cache.json
+scripts/cache/openai_cache.json

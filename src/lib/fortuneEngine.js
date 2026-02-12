@@ -74,17 +74,28 @@ const createFallbackCard = (key, score, rng) => {
   };
 };
 
+const AI_CATEGORY_BY_KEY = {
+  total: 'good',
+  love: 'love',
+  study: 'study',
+  money: 'money',
+  health: 'health',
+};
+
 const createCardFromAi = (key, score, aiCards) => {
-  const card = aiCards?.[key];
+  const expectedCategory = AI_CATEGORY_BY_KEY[key];
+  const card = Array.isArray(aiCards)
+    ? aiCards.find((item) => item?.category === expectedCategory)
+    : null;
   if (!card) return null;
   return {
     key,
     name: CATEGORY_LABELS[key],
     score,
     tone: pickTone(score),
-    toneLabel: 'AI',
-    headline: card.title,
-    detail: card.body,
+    toneLabel: card.vibe || 'AI',
+    headline: card.headline || card.title,
+    detail: card.detail,
     tip: card.tip,
     caution: card.warning,
   };
@@ -109,24 +120,29 @@ export const generateFortune = (birthdate, todayKst, options = {}) => {
     return createCardFromAi(key, score, aiCards) || createFallbackCard(key, score, rng);
   });
 
-  const aiLucky = ranking?.ai?.lucky;
+  const aiLucky = ranking?.ai?.lucky_points;
   const fallbackColor = rng.pick(FALLBACK_LUCKY_COLORS);
   const lucky = {
     color: aiLucky?.color_hex || fallbackColor.value,
-    colorName: aiLucky?.color_name_ko || fallbackColor.name,
+    colorName: aiLucky?.color_name || fallbackColor.name,
     number: Number.isInteger(aiLucky?.number) ? aiLucky.number : rng.nextInt(1, 9),
     item: aiLucky?.item || rng.pick(FALLBACK_ITEMS),
     keyword: aiLucky?.keyword || rng.pick(FALLBACK_KEYWORDS),
   };
+
+  const aiSummary = ranking?.ai?.summary;
+  const summaryText = aiSummary
+    ? [aiSummary.one_liner, aiSummary.focus].filter(Boolean).join(' · ')
+    : ranking?.message_ko || ranking?.message_jp || '오늘의 흐름을 차분히 살펴보세요.';
 
   return {
     date: todayKst,
     birthdate,
     westernZodiac: getWesternZodiac(birthdate),
     chineseZodiac: getChineseZodiac(birthdate),
-    summary: ranking?.ai?.summary || ranking?.message_ko || ranking?.message_jp || '오늘의 흐름을 차분히 살펴보세요.',
-    summaryTip: ranking?.ai?.tip || null,
-    summaryWarning: ranking?.ai?.warning || null,
+    summary: summaryText,
+    summaryTip: null,
+    summaryWarning: null,
     fortunes,
     lucky,
   };

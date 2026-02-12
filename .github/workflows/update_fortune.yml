@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: update-fortune-json
-  cancel-in-progress: false
+  group: update-fortune
+  cancel-in-progress: true
 
 jobs:
   update:
@@ -20,6 +20,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Sync with remote (before changes)
+        run: |
+          git config user.name "ohaasa-bot"
+          git config user.email "ohaasa-bot@users.noreply.github.com"
+          git pull --rebase origin main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -50,12 +56,9 @@ jobs:
             exit 0
           fi
 
-          git config user.name "ohaasa-bot"
-          git config user.email "ohaasa-bot@users.noreply.github.com"
-
-          # 원격 변경 흡수 후 push (reject 방지)
-          git pull --rebase origin main
-
           git add public/fortune.json
           git commit -m "chore: update fortune data"
+
+          # rebase 최신화 후 push (충돌/레이스 방지)
+          git pull --rebase origin main
           git push origin HEAD:main

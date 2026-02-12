@@ -5,6 +5,10 @@ on:
     - cron: "0 20 * * *" # KST 05:00 (UTC 20:00)
   workflow_dispatch:
 
+concurrency:
+  group: fortune-update
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-22.04
@@ -14,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,7 +39,7 @@ jobs:
       - name: Fetch ohaasa fortune
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: gpt-5-mini
+          OPENAI_MODEL: "gpt-5-mini"
         run: |
           python scripts/fetch_ohaasa.py
 
@@ -43,8 +49,15 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
+
           git config user.name "ohaasa-bot"
           git config user.email "ohaasa-bot@users.noreply.github.com"
+
+          # 원격 변경 먼저 반영 (push 거절 방지)
+          git fetch origin main
+          git pull --rebase --autostash origin main
+
           git add public/fortune.json
           git commit -m "chore: update fortune data"
-          git push
+
+          git push origin HEAD:main

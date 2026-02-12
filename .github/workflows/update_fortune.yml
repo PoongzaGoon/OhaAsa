@@ -32,8 +32,7 @@ jobs:
 
       - name: Fetch ohaasa fortune
         env:
-          PAPAGO_CLIENT_ID: ${{ secrets.PAPAGO_CLIENT_ID }}
-          PAPAGO_CLIENT_SECRET: ${{ secrets.PAPAGO_CLIENT_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python scripts/fetch_ohaasa.py
 

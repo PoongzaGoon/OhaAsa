@@ -5,15 +5,20 @@ import logging
 import os
 import random
 import re
+import time
 from pathlib import Path
+from typing import Any
 
-import requests
+from openai import OpenAI
 from playwright.sync_api import sync_playwright
 
 SOURCE_URL = "https://www.asahi.co.jp/ohaasa/week/horoscope/"
 OUTPUT_PATH = Path("public/fortune.json")
-CACHE_PATH = Path("scripts/cache/translate_cache.json")
+AI_CACHE_PATH = Path("scripts/cache/ai_cache.json")
 TIMEOUT_MS = 30000
+OPENAI_MODEL = "gpt-5-mini"
+OPENAI_RETRY_COUNT = 1
+REQUEST_SLEEP_SECONDS = 0.3
 
 SIGN_MAP = {
     "おひつじ座": "양자리",
@@ -58,20 +63,21 @@ RANK_SCORE_BANDS = {
 }
 
 CATEGORY_KEYS = ["total", "love", "study", "money", "health"]
+CARD_KEYS = ["total", "love", "study", "money", "health"]
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
 
-def get_kst_now():
+def get_kst_now() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc).astimezone(
         datetime.timezone(datetime.timedelta(hours=9))
     )
 
 
-def kst_date_string():
+def kst_date_string() -> str:
     return get_kst_now().date().isoformat()
 
 
-def kst_iso_string():
+def kst_iso_string() -> str:
     return get_kst_now().isoformat()
 
 
@@ -90,7 +96,7 @@ def clamp_score(value: int) -> int:
     return max(0, min(100, value))
 
 
-def generate_scores(rank: int, date_key: str, sign_key: str) -> dict:
+def generate_scores(rank: int, date_key: str, sign_key: str) -> dict[str, int]:
     base_seed = seed_for(f"{date_key}|{sign_key}|overall")
     overall = score_from_rank(rank, base_seed)
     scores = {"overall": overall}
@@ -102,51 +108,21 @@ def generate_scores(rank: int, date_key: str, sign_key: str) -> dict:
     return scores
 
 
-def load_cache() -> dict:
-    if CACHE_PATH.exists():
+def load_cache(path: Path) -> dict[str, Any]:
+    if path.exists():
         try:
-            return json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+            return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             return {}
     return {}
 
 
-def save_cache(cache: dict) -> None:
-    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CACHE_PATH.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+def save_cache(path: Path, cache: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def translate_text(text: str, cache: dict, date_key: str) -> str | None:
-    if not text:
-        return None
-    cache_key = f"{date_key}|{text}"
-    if cache_key in cache:
-        return cache[cache_key]
-
-    client_id = os.getenv("PAPAGO_CLIENT_ID")
-    client_secret = os.getenv("PAPAGO_CLIENT_SECRET")
-    if not client_id or not client_secret:
-        return None
-
-    url = "https://openapi.naver.com/v1/papago/n2mt"
-    headers = {
-        "X-Naver-Client-Id": client_id,
-        "X-Naver-Client-Secret": client_secret,
-    }
-    data = {"source": "ja", "target": "ko", "text": text}
-    try:
-        resp = requests.post(url, headers=headers, data=data, timeout=20)
-        resp.raise_for_status()
-        translated = resp.json()["message"]["result"]["translatedText"]
-    except Exception as e:
-        logging.warning("Papago translation failed: %s", e)
-        return None
-
-    cache[cache_key] = translated
-    return translated
-
-
-def build_payload(date_key: str, rankings: list, status="ok", error_message=None) -> dict:
+def build_payload(date_key: str, rankings: list[dict], status: str = "ok", error_message: str | None = None) -> dict:
     return {
         "source": "asahi_ohaasa",
         "date_kst": date_key,
@@ -177,11 +153,8 @@ def scrape_with_playwright() -> tuple[str, list[dict]]:
         )
         page = context.new_page()
         page.goto(SOURCE_URL, wait_until="domcontentloaded", timeout=TIMEOUT_MS)
-
-        # 랭킹 리스트가 렌더링될 때까지 대기
         page.wait_for_selector("ul.oa_horoscope_list li", timeout=TIMEOUT_MS)
 
-        # 날짜 표시(있으면)
         date_text = ""
         try:
             date_text = page.locator(".oa_horoscope_date").inner_text(timeout=2000).strip()
@@ -194,15 +167,9 @@ def scrape_with_playwright() -> tuple[str, list[dict]]:
 
         for i in range(count):
             li = items.nth(i)
-
-            # rank: <span class="horo_rank">1</span>
             rank_raw = li.locator(".horo_rank").inner_text().strip()
             rank = int(re.sub(r"\D+", "", rank_raw) or "0")
-
-            # sign: <span class="horo_name">ふたご座</span>
             sign_jp = li.locator(".horo_name").inner_text().strip()
-
-            # message: <dd class="horo_txt">...</dd>
             msg_jp = li.locator(".horo_txt").inner_text().strip()
 
             if rank and sign_jp:
@@ -213,15 +180,176 @@ def scrape_with_playwright() -> tuple[str, list[dict]]:
         return date_text, results
 
 
-def main():
+def get_response_text(response: Any) -> str:
+    output_text = getattr(response, "output_text", None)
+    if output_text:
+        return output_text.strip()
+
+    chunks: list[str] = []
+    for item in getattr(response, "output", []) or []:
+        for content in getattr(item, "content", []) or []:
+            text_value = getattr(content, "text", None)
+            if text_value:
+                chunks.append(text_value)
+    return "\n".join(chunks).strip()
+
+
+def validate_ai_bundle(data: dict[str, Any]) -> None:
+    if not isinstance(data.get("message_ko"), str) or not data["message_ko"].strip():
+        raise ValueError("message_ko missing")
+
+    ai = data.get("ai")
+    if not isinstance(ai, dict):
+        raise ValueError("ai missing")
+
+    for key in ["summary", "tip", "warning"]:
+        if not isinstance(ai.get(key), str) or not ai[key].strip():
+            raise ValueError(f"ai.{key} missing")
+
+    lucky = ai.get("lucky")
+    if not isinstance(lucky, dict):
+        raise ValueError("ai.lucky missing")
+
+    if not isinstance(lucky.get("color_name_ko"), str) or not lucky["color_name_ko"].strip():
+        raise ValueError("ai.lucky.color_name_ko missing")
+    if not isinstance(lucky.get("color_hex"), str) or not re.match(r"^#[0-9A-Fa-f]{6}$", lucky["color_hex"]):
+        raise ValueError("ai.lucky.color_hex invalid")
+    if not isinstance(lucky.get("number"), int) or lucky["number"] < 0 or lucky["number"] > 9:
+        raise ValueError("ai.lucky.number invalid")
+    for key in ["item", "keyword"]:
+        if not isinstance(lucky.get(key), str) or not lucky[key].strip():
+            raise ValueError(f"ai.lucky.{key} missing")
+
+    cards = ai.get("cards")
+    if not isinstance(cards, dict):
+        raise ValueError("ai.cards missing")
+    for card_key in CARD_KEYS:
+        card = cards.get(card_key)
+        if not isinstance(card, dict):
+            raise ValueError(f"ai.cards.{card_key} missing")
+        for field in ["title", "body", "tip", "warning"]:
+            if not isinstance(card.get(field), str) or not card[field].strip():
+                raise ValueError(f"ai.cards.{card_key}.{field} missing")
+
+
+def build_prompt_payload(date_key: str, sign_jp: str, sign_ko: str, scores: dict[str, int], message_jp: str) -> str:
+    payload = {
+        "date_kst": date_key,
+        "sign_jp": sign_jp,
+        "sign_ko": sign_ko,
+        "scores": scores,
+        "message_jp": message_jp,
+        "seed_hint": f"{date_key}|{sign_jp}|ohaasa-ai-v1",
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def generate_ai_bundle(
+    client: OpenAI,
+    date_key: str,
+    sign_jp: str,
+    sign_ko: str,
+    scores: dict[str, int],
+    message_jp: str,
+) -> dict[str, Any]:
+    prompt_input = build_prompt_payload(date_key, sign_jp, sign_ko, scores, message_jp)
+    system_prompt = (
+        "You are a Korean horoscope localization assistant. "
+        "Return JSON only. Do not include markdown. "
+        "Use safe, non-deterministic but calm tone. Avoid medical/financial certainty claims. "
+        "Keep constraints: message_ko 1-2 sentences, ai.summary/tip/warning 1 sentence each, "
+        "cards.*.body 2-3 sentences, cards.*.tip and cards.*.warning 1 sentence each. "
+        "lucky.item 2-6 Korean words, lucky.keyword 1-4 Korean words, lucky.number integer 0-9."
+    )
+    json_schema = {
+        "type": "object",
+        "properties": {
+            "message_ko": {"type": "string"},
+            "ai": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string"},
+                    "tip": {"type": "string"},
+                    "warning": {"type": "string"},
+                    "lucky": {
+                        "type": "object",
+                        "properties": {
+                            "color_name_ko": {"type": "string"},
+                            "color_hex": {"type": "string"},
+                            "number": {"type": "integer"},
+                            "item": {"type": "string"},
+                            "keyword": {"type": "string"},
+                        },
+                        "required": ["color_name_ko", "color_hex", "number", "item", "keyword"],
+                        "additionalProperties": False,
+                    },
+                    "cards": {
+                        "type": "object",
+                        "properties": {
+                            k: {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "body": {"type": "string"},
+                                    "tip": {"type": "string"},
+                                    "warning": {"type": "string"},
+                                },
+                                "required": ["title", "body", "tip", "warning"],
+                                "additionalProperties": False,
+                            }
+                            for k in CARD_KEYS
+                        },
+                        "required": CARD_KEYS,
+                        "additionalProperties": False,
+                    },
+                },
+                "required": ["summary", "tip", "warning", "lucky", "cards"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["message_ko", "ai"],
+        "additionalProperties": False,
+    }
+
+    last_error: Exception | None = None
+    for attempt in range(OPENAI_RETRY_COUNT + 1):
+        try:
+            response = client.responses.create(
+                model=OPENAI_MODEL,
+                input=[
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Generate output with this exact JSON schema and values in Korean.\n"
+                            f"schema={json.dumps(json_schema, ensure_ascii=False)}\n"
+                            f"input={prompt_input}"
+                        ),
+                    },
+                ],
+            )
+            raw_text = get_response_text(response)
+            parsed = json.loads(raw_text)
+            validate_ai_bundle(parsed)
+            return parsed
+        except Exception as error:
+            last_error = error
+            logging.warning("OpenAI parse/generation failed (%s/%s): %s", attempt + 1, OPENAI_RETRY_COUNT + 1, error)
+            if attempt < OPENAI_RETRY_COUNT:
+                time.sleep(0.4)
+
+    raise RuntimeError(f"OpenAI generation failed: {last_error}")
+
+
+def main() -> None:
     date_key = kst_date_string()
-    cache = load_cache()
+    ai_cache = load_cache(AI_CACHE_PATH)
 
     try:
         _, parsed = scrape_with_playwright()
-    except Exception as e:
-        logging.error("Scraping failed: %s", e)
-        write_payload(build_payload(date_key, [], status="error", error_message=str(e)))
+    except Exception as error:
+        logging.error("Scraping failed: %s", error)
+        write_payload(build_payload(date_key, [], status="error", error_message=str(error)))
         return
 
     if len(parsed) < 12:
@@ -230,8 +358,13 @@ def main():
         write_payload(build_payload(date_key, [], status="error", error_message=msg))
         return
 
-    rankings = []
-    translation_failed = False
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=openai_api_key) if openai_api_key else None
+    if not client:
+        logging.warning("OPENAI_API_KEY missing. ai fields will be null.")
+
+    rankings: list[dict[str, Any]] = []
+    ai_failed_items: list[str] = []
 
     parsed.sort(key=lambda x: x["rank"])
     for item in parsed:
@@ -239,9 +372,33 @@ def main():
         sign_ko = SIGN_MAP.get(sign_jp) or SIGN_MAP.get(sign_jp.replace(" ", "")) or ""
         scores = generate_scores(item["rank"], date_key, sign_jp)
 
-        message_ko = translate_text(item["message_jp"], cache, date_key)
-        if message_ko is None and (os.getenv("PAPAGO_CLIENT_ID") and os.getenv("PAPAGO_CLIENT_SECRET")):
-            translation_failed = True
+        cache_key = f"{date_key}|{sign_jp}"
+        ai_bundle = ai_cache.get(cache_key)
+
+        if not ai_bundle and client:
+            try:
+                ai_bundle = generate_ai_bundle(
+                    client=client,
+                    date_key=date_key,
+                    sign_jp=sign_jp,
+                    sign_ko=sign_ko,
+                    scores=scores,
+                    message_jp=item["message_jp"],
+                )
+                ai_cache[cache_key] = ai_bundle
+            except Exception as error:
+                ai_failed_items.append(f"{item['rank']}:{sign_jp}")
+                logging.warning("AI bundle failed for %s: %s", sign_jp, error)
+            finally:
+                time.sleep(REQUEST_SLEEP_SECONDS)
+
+        if ai_bundle:
+            try:
+                validate_ai_bundle(ai_bundle)
+            except Exception as error:
+                logging.warning("Cached AI bundle invalid for %s: %s", sign_jp, error)
+                ai_bundle = None
+                ai_failed_items.append(f"{item['rank']}:{sign_jp}")
 
         rankings.append(
             {
@@ -249,7 +406,7 @@ def main():
                 "sign_jp": sign_jp,
                 "sign_ko": sign_ko,
                 "message_jp": item["message_jp"],
-                "message_ko": message_ko,
+                "message_ko": ai_bundle.get("message_ko") if ai_bundle else None,
                 "scores": {
                     "overall": scores["overall"],
                     "total": scores["total"],
@@ -258,14 +415,19 @@ def main():
                     "money": scores["money"],
                     "health": scores["health"],
                 },
+                "ai": ai_bundle.get("ai") if ai_bundle else None,
             }
         )
 
-    status = "partial" if translation_failed else "ok"
-    error_message = "Papago translation failed" if translation_failed else None
+    status = "ok"
+    error_message = None
+    if ai_failed_items or not client:
+        status = "partial"
+        reason = "OPENAI_API_KEY missing" if not client else f"AI generation failed for: {', '.join(ai_failed_items)}"
+        error_message = reason
 
     write_payload(build_payload(date_key, rankings, status=status, error_message=error_message))
-    save_cache(cache)
+    save_cache(AI_CACHE_PATH, ai_cache)
     logging.info("Updated %s with %d rankings", OUTPUT_PATH, len(rankings))
 
 

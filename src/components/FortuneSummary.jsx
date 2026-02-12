@@ -1,4 +1,4 @@
-function FortuneSummary({ dateDisplay, birthdate, westernZodiac, chineseZodiac }) {
+function FortuneSummary({ dateDisplay, birthdate, westernZodiac, chineseZodiac, summary, summaryTip, summaryWarning }) {
   return (
     <section className="section">
       <div className="glass-card summary-card">
@@ -15,8 +15,14 @@ function FortuneSummary({ dateDisplay, birthdate, westernZodiac, chineseZodiac }
             <span className="tag">동양 띠: {chineseZodiac}</span>
           </div>
           <p className="detail" style={{ margin: 0 }}>
-            별과 행성의 흐름을 담은 오늘의 인사이트를 확인해보세요.
+            {summary || '별과 행성의 흐름을 담은 오늘의 인사이트를 확인해보세요.'}
           </p>
+          {(summaryTip || summaryWarning) && (
+            <div className="tips" style={{ marginTop: 10 }}>
+              {summaryTip && <div className="tip">Tip: {summaryTip}</div>}
+              {summaryWarning && <div className="caution">주의: {summaryWarning}</div>}
+            </div>
+          )}
         </div>
       </div>
     </section>

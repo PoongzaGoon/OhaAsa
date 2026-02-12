@@ -33,21 +33,24 @@ function Result() {
       }
       let rank = null;
       let scoreOverrides = null;
+      let ranking = null;
       try {
         const response = await fetch('/fortune.json', { cache: 'no-store' });
         if (response.ok) {
           const payload = await response.json();
           const westernZodiac = getWesternZodiac(birthdate);
           const match = payload.rankings?.find((item) => item.sign_ko === westernZodiac);
+          ranking = match || null;
           rank = match?.rank ?? null;
           scoreOverrides = normalizeOhaasaScores(match?.scores);
         }
       } catch (error) {
         rank = null;
         scoreOverrides = null;
+        ranking = null;
       }
       if (cancelled) return;
-      const next = generateFortune(birthdate, todayKst, { rank, scores: scoreOverrides });
+      const next = generateFortune(birthdate, todayKst, { rank, scores: scoreOverrides, ranking });
       setFortune(next);
       saveFortune(next);
     };
@@ -86,6 +89,9 @@ function Result() {
           birthdate={fortune.birthdate}
           westernZodiac={fortune.westernZodiac}
           chineseZodiac={fortune.chineseZodiac}
+          summary={fortune.summary}
+          summaryTip={fortune.summaryTip}
+          summaryWarning={fortune.summaryWarning}
         />
         <LuckyPanel lucky={fortune.lucky} />
         <ActionBar

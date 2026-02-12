@@ -55,7 +55,7 @@ function OhaasaRanking() {
     : data.status === 'error'
       ? data.error_message || '데이터를 불러오지 못했습니다.'
       : data.status === 'partial'
-        ? data.error_message || '일부 번역이 제공되지 않습니다.'
+        ? data.error_message || '일부 AI 멘트가 제공되지 않습니다.'
         : '';
 
   const handleToggle = (rank) => {
@@ -134,7 +134,7 @@ function OhaasaRanking() {
                 style={{ maxHeight: isExpanded ? `${detailHeights[item.rank] ?? 0}px` : '0px' }}
               >
                 <p className="rank-message">{message}</p>
-                {!item.message_ko && <p className="rank-translation-warning">번역 실패 · 일본어 원문</p>}
+                {!item.message_ko && <p className="rank-translation-warning">AI 생성 누락 · 일본어 원문</p>}
                 <div className="rank-score">
                   <span>overall {scores.overall ?? 0}점</span>
                   <div className="progress-bar score-bar">

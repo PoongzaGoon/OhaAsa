@@ -296,6 +296,19 @@ JSON_SCHEMA = {
     },
 }
 
+def build_text_format(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    OpenAI Responses API JSON Schema format.
+    Some SDK/runtime combinations require `text.format.name` and `text.format.schema`
+    at the top level (instead of nested in `json_schema`).
+    """
+    return {
+        "type": "json_schema",
+        "name": str(schema.get("name", "ohaasa_ai_bundle")),
+        "schema": schema.get("schema", {}),
+    }
+
+
 def _normalize_hex(s: str, fallback: str = "#111111") -> str:
     if not isinstance(s, str):
         return fallback
@@ -373,7 +386,7 @@ def openai_generate_bundle(
             {"role": "system", "content": SYSTEM_KO},
             {"role": "user", "content": json.dumps(inp, ensure_ascii=False)},
         ],
-        "text": {"format": {"type": "json_schema", "json_schema": JSON_SCHEMA}},
+        "text": {"format": build_text_format(JSON_SCHEMA)},
     }
 
     last_err: Optional[Exception] = None

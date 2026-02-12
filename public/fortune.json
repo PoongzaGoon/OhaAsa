@@ -1,8 +1,8 @@
 {
   "source": "asahi_ohaasa",
   "date_kst": "2026-02-12",
-  "updated_at_kst": "2026-02-12T22:06:59.287426+09:00",
-  "status": "ok",
-  "error_message": "",
+  "updated_at_kst": "2026-02-12T23:37:54.298009+09:00",
+  "status": "error",
+  "error_message": "scrape_failed: empty rankings",
   "rankings": []
 }

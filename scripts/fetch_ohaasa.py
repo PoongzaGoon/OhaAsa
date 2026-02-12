@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 # =========================
 # Config
 # =========================
-OHAASA_URL = "https://www.asahi.com/horoscope/12star/"  # 오하아사 12별자리 페이지(필요시 너 프로젝트 URL로 맞춰줘)
+OHAASA_URL = "https://www.asahi.co.jp/ohaasa/week/horoscope/"  # 오하아사 12별자리 페이지
 OUT_JSON_PATH = Path("public/fortune.json")
 
 CACHE_DIR = Path("scripts/cache")

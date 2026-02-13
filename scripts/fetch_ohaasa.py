@@ -19,6 +19,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 # -----------------------------
 OHAASA_URL = "https://www.asahi.co.jp/ohaasa/week/horoscope/"
 OUTPUT_PATH = os.path.join("public", "fortune.json")
+ERROR_OUTPUT_PATH = os.path.join("public", "fortune.error.json")
 CACHE_PATH = os.path.join("scripts", "cache", "openai_cache.json")
 
 DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
@@ -79,6 +80,34 @@ def save_json(path: str, obj: Dict[str, Any]) -> None:
         json.dump(obj, f, ensure_ascii=False, indent=2)
 
 
+def save_json_atomic(path: str, obj: Dict[str, Any]) -> None:
+    ensure_dir(os.path.dirname(path))
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, path)
+
+
+def validate_rankings_output(rankings: List[Dict[str, Any]]) -> Tuple[bool, str]:
+    if len(rankings) != 12:
+        return False, f"rankings_length_invalid: expected 12 got {len(rankings)}"
+
+    ranks: List[int] = []
+    for item in rankings:
+        try:
+            rank = int(item.get("rank"))
+        except Exception:
+            return False, f"invalid_rank_type: {item.get('rank')}"
+        ranks.append(rank)
+
+    expected = set(range(1, 13))
+    found = set(ranks)
+    if found != expected:
+        return False, f"rank_set_invalid: found={sorted(found)} expected={sorted(expected)}"
+
+    return True, ""
+
+
 # -----------------------------
 # Scraping
 # -----------------------------
@@ -118,7 +147,9 @@ def scrape_ohaasa_rankings() -> List[RankingItem]:
         page = context.new_page()
 
         # Navigate
+        eprint(f"[INFO] goto url={OHAASA_URL}")
         page.goto(OHAASA_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+        eprint(f"[INFO] landed url={page.url}")
 
         # Redirect guard (your log showed it ended at asahi.com)
         if "asahi.co.jp/ohaasa/week/horoscope" not in page.url:
@@ -126,6 +157,7 @@ def scrape_ohaasa_rankings() -> List[RankingItem]:
 
         # Wait for list to appear
         try:
+            eprint("[INFO] waiting selector=ul.oa_horoscope_list > li")
             page.wait_for_selector("ul.oa_horoscope_list > li", timeout=SEL_TIMEOUT)
         except PlaywrightTimeoutError as te:
             # Dump a little debug info
@@ -135,6 +167,7 @@ def scrape_ohaasa_rankings() -> List[RankingItem]:
             ) from te
 
         lis = page.query_selector_all("ul.oa_horoscope_list > li")
+        eprint(f"[INFO] scraped li count={len(lis)}")
         for li in lis:
             # rank
             rank_txt = (li.query_selector(".horo_rank").inner_text() if li.query_selector(".horo_rank") else "").strip()
@@ -443,7 +476,7 @@ def main() -> int:
             "error_message": f"scrape_failed: {e}",
             "rankings": [],
         }
-        save_json(OUTPUT_PATH, out)
+        save_json(ERROR_OUTPUT_PATH, out)
         return 1
 
     if len(rankings) < MIN_RANKINGS:
@@ -456,7 +489,7 @@ def main() -> int:
             "error_message": f"scrape_incomplete: got {len(rankings)} items",
             "rankings": [],
         }
-        save_json(OUTPUT_PATH, out)
+        save_json(ERROR_OUTPUT_PATH, out)
         return 1
 
     # Enrich per sign
@@ -499,21 +532,42 @@ def main() -> int:
     # Save cache
     save_json(CACHE_PATH, cache)
 
-    # Final output
+    # If *all* ai generation failed, treat as error (prevents silent garbage)
+    if all(item.get("ai") is None for item in enriched):
+        eprint("[ERROR] OpenAI failed for all signs")
+        save_json(ERROR_OUTPUT_PATH, {
+            "source": "asahi_ohaasa",
+            "date_kst": date_kst,
+            "updated_at_kst": updated_at_kst,
+            "status": "error",
+            "error_message": "openai_failed_all",
+            "rankings": [],
+        })
+        return 1
+
+    valid, validation_error = validate_rankings_output(enriched)
+    if not valid:
+        eprint(f"[ERROR] output validation failed: {validation_error}")
+        save_json(ERROR_OUTPUT_PATH, {
+            "source": "asahi_ohaasa",
+            "date_kst": date_kst,
+            "updated_at_kst": updated_at_kst,
+            "status": "error",
+            "error_message": validation_error,
+            "rankings": [],
+        })
+        return 1
+
+    # Final output (atomic replace only after validation)
     out = {
         "source": "asahi_ohaasa",
         "date_kst": date_kst,
         "updated_at_kst": updated_at_kst,
         "status": "ok",
         "error_message": "",
-        "rankings": enriched,
+        "rankings": sorted(enriched, key=lambda item: int(item.get("rank", 999))),
     }
-    save_json(OUTPUT_PATH, out)
-
-    # If *all* ai generation failed, treat as error (prevents silent garbage)
-    if all(item.get("ai") is None for item in enriched):
-        eprint("[ERROR] OpenAI failed for all signs")
-        return 1
+    save_json_atomic(OUTPUT_PATH, out)
 
     print("[OK] fortune.json generated:", OUTPUT_PATH)
     return 0

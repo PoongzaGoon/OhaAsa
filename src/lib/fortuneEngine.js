@@ -2,6 +2,7 @@ import { createSeededRandom } from './seedRandom';
 import { getWesternZodiac } from './zodiacWestern';
 import { getChineseZodiac } from './zodiacChinese';
 import { normalizeOhaasaScores } from './fortuneScores';
+import { getTodayKstString } from './dateKst';
 
 const CATEGORY_LABELS = {
   total: '총운',
@@ -9,6 +10,21 @@ const CATEGORY_LABELS = {
   study: '학업운',
   money: '금전운',
   health: '건강운',
+};
+
+const SIGN_KO_BY_KEY = {
+  'jp_おひつじ座': '양자리',
+  'jp_おうし座': '황소자리',
+  'jp_ふたご座': '쌍둥이자리',
+  'jp_かに座': '게자리',
+  'jp_しし座': '사자자리',
+  'jp_おとめ座': '처녀자리',
+  'jp_てんびん座': '천칭자리',
+  'jp_さそり座': '전갈자리',
+  'jp_いて座': '사수자리',
+  'jp_やぎ座': '염소자리',
+  'jp_みずがめ座': '물병자리',
+  'jp_うお座': '물고기자리',
 };
 
 const FALLBACK_TEXT = {
@@ -44,6 +60,32 @@ const FALLBACK_LUCKY_COLORS = [
 const FALLBACK_ITEMS = ['작은 메모장', '텀블러', '정리 파우치', '가벼운 카드 지갑'];
 const FALLBACK_KEYWORDS = ['집중', '균형', '회복', '정리'];
 
+const isDev = typeof import.meta !== 'undefined' && !!import.meta.env?.DEV;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const devWarn = (...args) => {
+  if (isDev) console.warn('[fortune-normalize]', ...args);
+};
+
+const parseRank = (value) => {
+  if (Number.isInteger(value)) return value;
+  if (typeof value === 'string') {
+    const digits = value.match(/\d+/g)?.join('') || '';
+    if (!digits) return null;
+    return Number.parseInt(digits, 10);
+  }
+  return null;
+};
+
+const normalizeStatusTag = (value) => {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (text === '상승' || text === '하락' || text === '안정') return text;
+  if (!text) return '안정';
+  if (text.includes('상')) return '상승';
+  if (text.includes('하')) return '하락';
+  return '안정';
+};
+
 const pickTone = (score) => {
   if (score < 40) return 'low';
   if (score < 70) return 'mid';
@@ -58,7 +100,81 @@ const getOverallRangeByRank = (rank) => {
   return null;
 };
 
-const createFallbackCard = (key, score, rng) => {
+export const normalizeRanking = (ranking, index = 0) => {
+  const warnings = [];
+  const next = { ...(ranking || {}) };
+
+  const parsedRank = parseRank(next.rank);
+  next.rank = Number.isInteger(parsedRank) && parsedRank >= 1 && parsedRank <= 12 ? parsedRank : null;
+  if (next.rank == null) warnings.push(`invalid rank at index ${index}`);
+
+  next.sign_key = typeof next.sign_key === 'string' && next.sign_key.trim() ? next.sign_key.trim() : null;
+  if (!next.sign_key) warnings.push(`missing sign_key at index ${index}`);
+
+  if (!next.sign_ko && next.sign_key) {
+    next.sign_ko = SIGN_KO_BY_KEY[next.sign_key] || '';
+  }
+
+  next.scores = normalizeOhaasaScores(next.scores);
+  next.status_tag = normalizeStatusTag(next.status_tag ?? next.trend ?? next.toneLabel);
+
+  if (!next.ai || typeof next.ai !== 'object') {
+    next.ai = null;
+  } else {
+    const safeCards = Array.isArray(next.ai.cards) ? next.ai.cards : null;
+    const safeSummary = next.ai.summary && typeof next.ai.summary === 'object' ? next.ai.summary : null;
+    next.ai = {
+      ...next.ai,
+      cards: safeCards,
+      summary: safeSummary,
+    };
+  }
+
+  return { ranking: next, warnings };
+};
+
+export const normalizeFortuneJson = (data) => {
+  const warnings = [];
+  const fallbackDate = getTodayKstString();
+  const dateCandidate = typeof data?.date_kst === 'string' ? data.date_kst.trim() : '';
+  const date_kst = DATE_RE.test(dateCandidate) ? dateCandidate : fallbackDate;
+  if (date_kst !== dateCandidate) warnings.push('invalid date_kst');
+
+  const inputRankings = Array.isArray(data?.rankings) ? data.rankings : [];
+  const normalized = inputRankings.map((item, index) => normalizeRanking(item, index));
+  normalized.forEach(({ warnings: itemWarnings }) => warnings.push(...itemWarnings));
+
+  const rankings = normalized
+    .map(({ ranking }) => ranking)
+    .filter((item) => Number.isInteger(item.rank) && item.rank >= 1 && item.rank <= 12)
+    .sort((a, b) => a.rank - b.rank);
+
+  const deduped = [];
+  const seenRanks = new Set();
+  rankings.forEach((item) => {
+    if (seenRanks.has(item.rank)) {
+      warnings.push(`duplicate rank ${item.rank}`);
+      return;
+    }
+    seenRanks.add(item.rank);
+    deduped.push(item);
+  });
+
+  const nextStatus = warnings.length > 0 && data?.status === 'ok' ? 'partial' : data?.status || 'ok';
+  if (warnings.length > 0) devWarn({ warnings });
+
+  return {
+    source: data?.source || 'asahi_ohaasa',
+    date_kst,
+    updated_at_kst: data?.updated_at_kst || null,
+    status: nextStatus,
+    error_message: data?.error_message || '',
+    rankings: deduped,
+    warnings,
+  };
+};
+
+const createFallbackCard = (key, score) => {
   const tone = pickTone(score);
   const template = FALLBACK_TEXT[tone];
   return {
@@ -75,26 +191,24 @@ const createFallbackCard = (key, score, rng) => {
 };
 
 const AI_CATEGORY_BY_KEY = {
-  total: 'good',
+  total: 'total',
   love: 'love',
   study: 'study',
   money: 'money',
   health: 'health',
 };
 
-const createCardFromAi = (key, score, aiCards) => {
+const createCardFromAi = (key, score, aiCards, statusTag) => {
   const expectedCategory = AI_CATEGORY_BY_KEY[key];
-  const card = Array.isArray(aiCards)
-    ? aiCards.find((item) => item?.category === expectedCategory)
-    : null;
+  const card = Array.isArray(aiCards) ? aiCards.find((item) => item?.category === expectedCategory) : null;
   if (!card) return null;
   return {
     key,
     name: CATEGORY_LABELS[key],
     score,
     tone: pickTone(score),
-    toneLabel: card.vibe || 'AI',
-    headline: card.headline || card.title,
+    toneLabel: statusTag || '안정',
+    headline: card.vibe || card.headline || card.title,
     detail: card.detail,
     tip: card.tip,
     caution: card.warning,
@@ -105,7 +219,8 @@ export const generateFortune = (birthdate, todayKst, options = {}) => {
   const { rank = null, scores = null, ranking = null } = options;
   const seed = `${todayKst}|${birthdate}|ohaasa-v2`;
   const rng = createSeededRandom(seed);
-  const normalizedScores = normalizeOhaasaScores(scores || ranking?.scores);
+  const normalizedRanking = ranking ? normalizeRanking(ranking).ranking : null;
+  const normalizedScores = normalizeOhaasaScores(scores || normalizedRanking?.scores);
   const totalRange = normalizedScores?.total == null ? getOverallRangeByRank(rank) : null;
 
   const scoreFor = (key) => {
@@ -114,13 +229,13 @@ export const generateFortune = (birthdate, todayKst, options = {}) => {
     return rng.nextInt(25, 98);
   };
 
-  const aiCards = ranking?.ai?.cards || null;
+  const aiCards = normalizedRanking?.ai?.cards || null;
   const fortunes = ['total', 'love', 'study', 'money', 'health'].map((key) => {
     const score = scoreFor(key);
-    return createCardFromAi(key, score, aiCards) || createFallbackCard(key, score, rng);
+    return createCardFromAi(key, score, aiCards, normalizedRanking?.status_tag) || createFallbackCard(key, score);
   });
 
-  const aiLucky = ranking?.ai?.lucky_points;
+  const aiLucky = normalizedRanking?.ai?.lucky_points;
   const fallbackColor = rng.pick(FALLBACK_LUCKY_COLORS);
   const lucky = {
     color: aiLucky?.color_hex || fallbackColor.value,
@@ -130,10 +245,10 @@ export const generateFortune = (birthdate, todayKst, options = {}) => {
     keyword: aiLucky?.keyword || rng.pick(FALLBACK_KEYWORDS),
   };
 
-  const aiSummary = ranking?.ai?.summary;
+  const aiSummary = normalizedRanking?.ai?.summary;
   const summaryText = aiSummary
-    ? [aiSummary.one_liner, aiSummary.focus].filter(Boolean).join(' · ')
-    : ranking?.message_ko || ranking?.message_jp || '오늘의 흐름을 차분히 살펴보세요.';
+    ? [aiSummary.one_liner, aiSummary.focus, aiSummary.title, aiSummary.body].filter(Boolean).join(' · ')
+    : normalizedRanking?.message_ko || normalizedRanking?.message_jp || '오늘의 흐름을 차분히 살펴보세요.';
 
   return {
     date: todayKst,

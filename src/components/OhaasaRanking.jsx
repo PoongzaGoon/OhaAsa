@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { normalizeOhaasaScores } from '../lib/fortuneScores';
+import { scoreToPercent } from '../lib/fortuneScores';
+import { normalizeFortuneJson } from '../lib/fortuneEngine';
 import { getZodiacColorStyle } from '../lib/zodiacColors';
 
 const CATEGORY_LABELS = {
@@ -32,7 +33,7 @@ function OhaasaRanking() {
         }
         const payload = await response.json();
         if (!cancelled) {
-          setData(payload);
+          setData(normalizeFortuneJson(payload));
         }
       } catch (error) {
         if (!cancelled) {
@@ -46,9 +47,7 @@ function OhaasaRanking() {
     };
   }, []);
 
-  const rankings = useMemo(() => {
-    return [...(data.rankings || [])].sort((a, b) => a.rank - b.rank);
-  }, [data.rankings]);
+  const rankings = useMemo(() => data.rankings || [], [data.rankings]);
 
   const statusMessage = fetchError
     ? fetchError
@@ -104,7 +103,7 @@ function OhaasaRanking() {
         {rankings.map((item) => {
           const message = item.message_ko || item.message_jp;
           const isExpanded = expandedRank === item.rank;
-          const scores = normalizeOhaasaScores(item.scores) || {};
+          const scores = item.scores || {};
           const detailId = `ranking-detail-${item.rank}`;
           return (
             <div
@@ -124,7 +123,7 @@ function OhaasaRanking() {
                   <h3>{item.sign_ko || '알 수 없음'}</h3>
                   <p className="rank-subtitle">{item.sign_jp}</p>
                 </div>
-                <span className="ranking-hint">{isExpanded ? '닫기' : '자세히 보기'}</span>
+                <span className="ranking-hint">{item.status_tag} · {isExpanded ? '닫기' : '자세히 보기'}</span>
               </button>
               <div
                 className="ranking-details"
@@ -136,9 +135,9 @@ function OhaasaRanking() {
                 <p className="rank-message">{message}</p>
                 {!item.message_ko && <p className="rank-translation-warning">AI 생성 누락 · 일본어 원문</p>}
                 <div className="rank-score">
-                  <span>overall {scores.overall ?? 0}점</span>
+                  <span>overall {scores.total ?? 0}점</span>
                   <div className="progress-bar score-bar">
-                    <div className="progress-fill score-fill" data-score={scores.overall ?? 0} />
+                    <div className="progress-fill score-fill" data-score={scoreToPercent(scores.total)} />
                   </div>
                 </div>
                 <div className="rank-categories">
@@ -149,7 +148,7 @@ function OhaasaRanking() {
                         <span>{scores[key] ?? 0}</span>
                       </div>
                       <div className="mini-bar">
-                        <div className="mini-fill" data-score={scores[key] ?? 0} />
+                        <div className="mini-fill" data-score={scoreToPercent(scores[key])} />
                       </div>
                     </div>
                   ))}

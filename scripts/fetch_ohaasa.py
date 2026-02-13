@@ -7,6 +7,7 @@ import json
 import time
 import hashlib
 import datetime
+import random
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -193,11 +194,6 @@ def scrape_ohaasa_rankings() -> List[RankingItem]:
     # Sort by rank
     items.sort(key=lambda x: x.rank)
     return items
-
-
-def scrape_scores_for_sign(_sign_key: str) -> Dict[str, int]:
-    # Placeholder until you implement score scraping from detail pages
-    return {"total": 50, "love": 50, "study": 50, "money": 50, "health": 50}
 
 
 # -----------------------------
@@ -410,6 +406,83 @@ def clamp_int(v: Any, lo: int, hi: int, default: int) -> int:
         return default
 
 
+def generate_scores_from_rank(date_kst: str, sign_key: str, rank: int, message_jp: str) -> Dict[str, int]:
+    rank_clamped = clamp_int(rank, 1, 12, 12)
+    base_total = round(48 + 44 * ((13 - rank_clamped) / 12) ** 1.15)
+    base_total = clamp_int(base_total, 0, 100, 50)
+
+    message_digest = hashlib.sha1((message_jp or "").encode("utf-8")).hexdigest()[:8]
+    seed_str = f"{date_kst}|{sign_key}|{rank_clamped}|{message_digest}"
+    seed_int = int(hashlib.sha1(seed_str.encode("utf-8")).hexdigest()[:8], 16)
+    rng = random.Random(seed_int)
+
+    deltas = {
+        "love": rng.randint(-10, 10),
+        "study": rng.randint(-8, 8),
+        "money": rng.randint(-12, 12),
+        "health": rng.randint(-7, 7),
+    }
+
+    scores = {
+        cat: clamp_int(base_total + delta, 0, 100, 50)
+        for cat, delta in deltas.items()
+    }
+
+    weights = {"love": 0.23, "study": 0.23, "money": 0.24, "health": 0.30}
+
+    def weighted_total(score_map: Dict[str, int]) -> int:
+        return clamp_int(
+            round(sum(score_map[cat] * weight for cat, weight in weights.items())),
+            0,
+            100,
+            50,
+        )
+
+    computed_total = weighted_total(scores)
+    drift = base_total - computed_total
+
+    if abs(drift) >= 3:
+        shifted = {
+            cat: clamp_int(value + drift, 0, 100, 50)
+            for cat, value in scores.items()
+        }
+        shifted_total = weighted_total(shifted)
+        if abs(base_total - shifted_total) <= abs(drift):
+            scores = shifted
+            computed_total = shifted_total
+
+    scores["total"] = computed_total
+    return scores
+
+
+def validate_scores(rankings: List[Dict[str, Any]]) -> Tuple[bool, str]:
+    categories = ["total", "love", "study", "money", "health"]
+
+    for item in rankings:
+        scores = item.get("scores")
+        if not isinstance(scores, dict):
+            return False, f"scores_missing_for_rank_{item.get('rank')}"
+        for cat in categories:
+            value = scores.get(cat)
+            if not isinstance(value, int):
+                return False, f"score_not_int: rank={item.get('rank')} category={cat} value={value}"
+            if not (0 <= value <= 100):
+                return False, f"score_out_of_range: rank={item.get('rank')} category={cat} value={value}"
+
+    ordered = sorted(rankings, key=lambda x: int(x.get("rank", 999)))
+    inversions = 0
+    for i in range(1, len(ordered)):
+        prev_total = ordered[i - 1]["scores"]["total"]
+        cur_total = ordered[i]["scores"]["total"]
+        if prev_total < cur_total:
+            inversions += 1
+
+    if inversions >= 2:
+        eprint(f"[WARN] total score trend has {inversions} inversions against rank order")
+
+    return True, ""
+
+
 def fix_bundle(bundle: Dict[str, Any], scores: Dict[str, int]) -> Dict[str, Any]:
     # Ensure score is exactly input scores and exactly 5 cards
     ai = bundle.get("ai", {})
@@ -495,7 +568,12 @@ def main() -> int:
     # Enrich per sign
     enriched: List[Dict[str, Any]] = []
     for r in rankings:
-        scores = scrape_scores_for_sign(r.sign_key)
+        scores = generate_scores_from_rank(
+            date_kst=date_kst,
+            sign_key=r.sign_key,
+            rank=r.rank,
+            message_jp=r.message_jp,
+        )
 
         # OpenAI bundle (one call)
         try:
@@ -532,6 +610,15 @@ def main() -> int:
     # Save cache
     save_json(CACHE_PATH, cache)
 
+    for sample in sorted(enriched, key=lambda item: int(item.get("rank", 999)))[:3]:
+        s = sample["scores"]
+        eprint(
+            "[DEBUG] score_sample "
+            f"rank={sample['rank']} sign_key={sample['sign_key']} "
+            f"total={s['total']} love={s['love']} study={s['study']} "
+            f"money={s['money']} health={s['health']}"
+        )
+
     # If *all* ai generation failed, treat as error (prevents silent garbage)
     if all(item.get("ai") is None for item in enriched):
         eprint("[ERROR] OpenAI failed for all signs")
@@ -554,6 +641,19 @@ def main() -> int:
             "updated_at_kst": updated_at_kst,
             "status": "error",
             "error_message": validation_error,
+            "rankings": [],
+        })
+        return 1
+
+    score_valid, score_validation_error = validate_scores(enriched)
+    if not score_valid:
+        eprint(f"[ERROR] score validation failed: {score_validation_error}")
+        save_json(ERROR_OUTPUT_PATH, {
+            "source": "asahi_ohaasa",
+            "date_kst": date_kst,
+            "updated_at_kst": updated_at_kst,
+            "status": "error",
+            "error_message": score_validation_error,
             "rankings": [],
         })
         return 1

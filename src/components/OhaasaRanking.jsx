@@ -123,7 +123,7 @@ function OhaasaRanking() {
                   <h3>{item.sign_ko || '알 수 없음'}</h3>
                   <p className="rank-subtitle">{item.sign_jp}</p>
                 </div>
-                <span className="ranking-hint">{item.status_tag} · {isExpanded ? '닫기' : '자세히 보기'}</span>
+                <span className="ranking-hint">{isExpanded ? '닫기' : '자세히 보기'}</span>
               </button>
               <div
                 className="ranking-details"

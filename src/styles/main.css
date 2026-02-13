@@ -96,6 +96,12 @@ a {
   color: var(--muted);
 }
 
+.header-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .section {
   margin-bottom: 20px;
 }
